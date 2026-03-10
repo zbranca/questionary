@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Questionary — Admin</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="/quiz" class="nav-link">Quiz</a>
+    <a href="/admin" class="brand">Admin</a>
+</nav>
+
+<main class="container">
+
+    <!-- Flash messages -->
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}"   class="alert alert-error"   th:text="${errorMessage}"></div>
+
+    <!-- Stats -->
+    <div class="stats">
+        <span class="stat">Total: <strong th:text="${totalCount}"></strong></span>
+        <span class="stat unanswered">Unanswered: <strong th:text="${unansweredCount}"></strong></span>
+        <span class="stat success">Success: <strong th:text="${successCount}"></strong></span>
+        <span class="stat failed">Failed: <strong th:text="${failedCount}"></strong></span>
+    </div>
+
+    <!-- Import section -->
+    <div class="card">
+        <h2>Import Questions</h2>
+        <p class="hint">
+            Upload a <code>.txt</code> file. Lines starting with <code>?</code> are questions;
+            the following lines are the official answer. Blank lines separate questions.
+        </p>
+        <form th:action="@{/admin/import}" method="post" enctype="multipart/form-data" class="import-form">
+            <input type="file" name="file" accept=".txt" required class="file-input"/>
+            <button type="submit" class="btn btn-primary">Import</button>
+        </form>
+    </div>
+
+    <!-- Danger zone -->
+    <div class="card danger-zone">
+        <h2>Manage</h2>
+        <div class="danger-actions">
+            <form th:action="@{/admin/reset-statuses}" method="post" style="display:inline">
+                <button type="submit" class="btn btn-outline"
+                        onclick="return confirm('Reset all statuses to unanswered?')">
+                    Reset All Statuses
+                </button>
+            </form>
+            <form th:action="@{/admin/delete-all}" method="post" style="display:inline">
+                <button type="submit" class="btn btn-danger"
+                        onclick="return confirm('Delete ALL questions? This cannot be undone.')">
+                    Delete All Questions
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Question list -->
+    <div th:if="${#lists.isEmpty(questions)}" class="card empty-state">
+        <p>No questions in database. Upload a .txt file to get started.</p>
+    </div>
+
+    <div th:if="${!#lists.isEmpty(questions)}" class="card">
+        <h2>Questions (<span th:text="${totalCount}"></span>)</h2>
+        <table class="question-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Question</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="q, stat : ${questions}"
+                    th:classappend="${q.status == null} ? 'row-unanswered' : (${q.status == 'SUCCESS'} ? 'row-success' : 'row-failed')">
+                    <td th:text="${stat.index + 1}" class="col-num"></td>
+                    <td th:text="${q.questionText}" class="col-question"></td>
+                    <td class="col-status">
+                        <span th:if="${q.status == null}" class="badge badge-unanswered">—</span>
+                        <span th:if="${q.status == 'SUCCESS'}" class="badge badge-success">SUCCESS</span>
+                        <span th:if="${q.status == 'FAILED'}"  class="badge badge-failed">FAILED</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</main>
+</body>
+</html>

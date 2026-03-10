@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Questionary</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="/quiz" class="brand">Questionary</a>
+    <a href="/admin" class="nav-link">Admin</a>
+</nav>
+
+<main class="container">
+
+    <!-- Progress bar -->
+    <div class="progress-bar-wrap">
+        <div class="progress-bar"
+             th:style="'width: ' + (${totalCount} > 0 ? (${successCount} + ${failedCount}) * 100 / ${totalCount} : 0) + '%'">
+        </div>
+    </div>
+    <div class="stats">
+        <span class="stat">Total: <strong th:text="${totalCount}"></strong></span>
+        <span class="stat unanswered">Remaining: <strong th:text="${unansweredCount}"></strong></span>
+        <span class="stat success">Success: <strong th:text="${successCount}"></strong></span>
+        <span class="stat failed">Failed: <strong th:text="${failedCount}"></strong></span>
+    </div>
+
+    <!-- Question card -->
+    <div class="card">
+        <div class="question-label">Question</div>
+        <p class="question-text" th:text="${question.questionText}"></p>
+
+        <!-- Draft textarea: editable before reveal, read-only after -->
+        <div th:if="${!showAnswer}">
+            <form th:id="'revealForm-' + ${question.id}"
+                  th:action="@{/quiz/{id}/reveal(id=${question.id})}" method="post">
+                <textarea class="draft-area" name="draft"
+                          placeholder="Draft your answer here..."></textarea>
+
+                <div class="actions">
+                    <button type="submit" class="btn btn-secondary">Show Answer</button>
+
+                    <!-- Skip submits draft to /skip (draft is ignored there) -->
+                    <button type="submit"
+                            th:formaction="@{/quiz/{id}/skip(id=${question.id})}"
+                            class="btn btn-outline">Skip</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- After reveal: show draft (read-only) then official answer + mark buttons -->
+        <div th:if="${showAnswer}" class="answer-section">
+            <div th:if="${draft != null and !#strings.isEmpty(draft)}">
+                <div class="draft-label">Your Draft</div>
+                <pre class="draft-readonly" th:text="${draft}"></pre>
+            </div>
+
+            <div class="answer-label">Official Answer</div>
+            <pre class="answer-text" th:text="${question.answerText}"></pre>
+
+            <div class="mark-actions">
+                <form th:action="@{/quiz/{id}/mark(id=${question.id})}" method="post" style="display:inline">
+                    <input type="hidden" name="status" value="SUCCESS"/>
+                    <button type="submit" class="btn btn-success">Mark Success</button>
+                </form>
+
+                <form th:action="@{/quiz/{id}/mark(id=${question.id})}" method="post" style="display:inline">
+                    <input type="hidden" name="status" value="FAILED"/>
+                    <button type="submit" class="btn btn-danger">Mark Failed</button>
+                </form>
+
+                <form th:action="@{/quiz/{id}/skip(id=${question.id})}" method="post" style="display:inline">
+                    <button type="submit" class="btn btn-outline">Skip</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</main>
+</body>
+</html>

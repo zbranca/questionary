@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Questionary — Done</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="/quiz" class="brand">Questionary</a>
+    <a href="/admin" class="nav-link">Admin</a>
+</nav>
+
+<main class="container">
+    <div class="card done-card">
+        <div class="done-icon">&#10003;</div>
+        <h2>All Done!</h2>
+        <p>You have reviewed all questions.</p>
+
+        <div class="stats done-stats">
+            <div class="stat-box success">
+                <div class="stat-number" th:text="${successCount}">0</div>
+                <div class="stat-label">Success</div>
+            </div>
+            <div class="stat-box failed">
+                <div class="stat-number" th:text="${failedCount}">0</div>
+                <div class="stat-label">Failed</div>
+            </div>
+            <div class="stat-box unanswered">
+                <div class="stat-number" th:text="${unansweredCount}">0</div>
+                <div class="stat-label">Skipped</div>
+            </div>
+        </div>
+
+        <div class="done-actions">
+            <a th:if="${unansweredCount > 0}" href="/quiz" class="btn btn-primary">Continue (Skipped)</a>
+            <a href="/admin" class="btn btn-outline">Go to Admin</a>
+        </div>
+    </div>
+</main>
+</body>
+</html>
