@@ -1,6 +1,7 @@
 package com.questionary.controller;
 
 import com.questionary.service.QuestionService;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -21,13 +22,21 @@ public class AdminController {
     }
 
     @GetMapping
-    public String adminPage(Model model) {
+    public String adminPage(Model model, HttpSession session) {
         model.addAttribute("questions", questionService.findAll());
         model.addAttribute("totalCount", questionService.countTotal());
         model.addAttribute("unansweredCount", questionService.countUnanswered());
         model.addAttribute("successCount", questionService.countSuccess());
         model.addAttribute("failedCount", questionService.countFailed());
+        model.addAttribute("failedOnlyMode", Boolean.TRUE.equals(session.getAttribute("failedOnlyMode")));
         return "admin";
+    }
+
+    @PostMapping("/toggle-failed-mode")
+    public String toggleFailedMode(HttpSession session) {
+        Boolean current = (Boolean) session.getAttribute("failedOnlyMode");
+        session.setAttribute("failedOnlyMode", !Boolean.TRUE.equals(current));
+        return REDIRECT_ADMIN;
     }
 
     @PostMapping("/import")

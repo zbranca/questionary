@@ -27,6 +27,9 @@
         <span class="stat success">Success: <strong th:text="${successCount}"></strong></span>
         <span class="stat failed">Failed: <strong th:text="${failedCount}"></strong></span>
     </div>
+    <div th:if="${failedOnlyMode}" class="alert alert-error" style="margin-bottom:0.5rem">
+        Failed Mode — only failed questions are shown.
+    </div>
 
     <!-- Question card -->
     <div class="card">

@@ -2,6 +2,7 @@ package com.questionary.controller;
 
 import com.questionary.entity.Question;
 import com.questionary.service.QuestionService;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -22,13 +23,22 @@ public class QuizController {
     }
 
     @GetMapping
-    public String quizHome() {
+    public String quizHome(HttpSession session) {
         if (questionService.countTotal() == 0) {
             return "redirect:/admin";
+        }
+        if (isFailedMode(session)) {
+            return questionService.findNextFailed()
+                    .map(q -> REDIRECT_QUIZ + q.getId())
+                    .orElse(REDIRECT_QUIZ_DONE);
         }
         return questionService.findNextUnanswered()
                 .map(q -> REDIRECT_QUIZ + q.getId())
                 .orElse(REDIRECT_QUIZ_DONE);
+    }
+
+    private boolean isFailedMode(HttpSession session) {
+        return Boolean.TRUE.equals(session.getAttribute("failedOnlyMode"));
     }
 
     @GetMapping("/done")
@@ -43,12 +53,13 @@ public class QuizController {
     @GetMapping("/{id}")
     public String showQuestion(
             @PathVariable Long id,
-            Model model) {
+            Model model,
+            HttpSession session) {
 
         Optional<Question> opt = questionService.findById(id);
         if (opt.isEmpty()) return REDIRECT_QUIZ_NO_SLASH;
 
-        addQuizAttributes(model, opt.get(), false, "");
+        addQuizAttributes(model, opt.get(), false, "", isFailedMode(session));
         return "quiz";
     }
 
@@ -57,19 +68,21 @@ public class QuizController {
     public String revealAnswer(
             @PathVariable Long id,
             @RequestParam(defaultValue = "") String draft,
-            Model model) {
+            Model model,
+            HttpSession session) {
 
         Optional<Question> opt = questionService.findById(id);
         if (opt.isEmpty()) return REDIRECT_QUIZ_NO_SLASH;
 
-        addQuizAttributes(model, opt.get(), true, draft);
+        addQuizAttributes(model, opt.get(), true, draft, isFailedMode(session));
         return "quiz";
     }
 
-    private void addQuizAttributes(Model model, Question question, boolean showAnswer, String draft) {
+    private void addQuizAttributes(Model model, Question question, boolean showAnswer, String draft, boolean failedOnlyMode) {
         model.addAttribute("question", question);
         model.addAttribute("showAnswer", showAnswer);
         model.addAttribute("draft", draft);
+        model.addAttribute("failedOnlyMode", failedOnlyMode);
         model.addAttribute("totalCount", questionService.countTotal());
         model.addAttribute("unansweredCount", questionService.countUnanswered());
         model.addAttribute("successCount", questionService.countSuccess());
@@ -77,7 +90,14 @@ public class QuizController {
     }
 
     @PostMapping("/{id}/skip")
-    public String skip(@PathVariable Long id) {
+    public String skip(@PathVariable Long id, HttpSession session) {
+        if (isFailedMode(session)) {
+            return questionService.findNextFailedExcluding(id)
+                    .map(next -> REDIRECT_QUIZ + next.getId())
+                    .orElseGet(() -> questionService.findNextFailed()
+                            .map(q -> REDIRECT_QUIZ + q.getId())
+                            .orElse(REDIRECT_QUIZ_DONE));
+        }
         return questionService.findNextUnansweredExcluding(id)
                 .map(next -> REDIRECT_QUIZ + next.getId())
                 .orElseGet(() -> questionService.findNextUnanswered()
@@ -88,10 +108,16 @@ public class QuizController {
     @PostMapping("/{id}/mark")
     public String mark(
             @PathVariable Long id,
-            @RequestParam String status) {
+            @RequestParam String status,
+            HttpSession session) {
 
         if ("SUCCESS".equals(status) || "FAILED".equals(status)) {
             questionService.markStatus(id, status);
+        }
+        if (isFailedMode(session)) {
+            return questionService.findNextFailed()
+                    .map(next -> REDIRECT_QUIZ + next.getId())
+                    .orElse(REDIRECT_QUIZ_DONE);
         }
         return questionService.findNextUnanswered()
                 .map(next -> REDIRECT_QUIZ + next.getId())

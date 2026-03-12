@@ -1,4 +1,6 @@
-# Questionary — CLAUDE.md
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 
@@ -8,10 +10,10 @@
 
 ## Tech Stack
 
-- **Spring Boot 3.2.4** — web + Thymeleaf + Spring Data JPA
+- **Java 21**, **Spring Boot 3.2.4** — web + Thymeleaf + Spring Data JPA
 - **SQLite** — `sqlite-jdbc 3.45.2.0` + `hibernate-community-dialects`
-- **Thymeleaf** — server-side templates (no JavaScript framework)
-- **Maven** — build tool
+- **Thymeleaf** — server-side templates (no JavaScript framework); cache disabled for hot-reload in dev
+- **Maven** — build tool; packages as **WAR** (deployable to external Tomcat or runnable as fat-JAR)
 
 ---
 
@@ -75,21 +77,25 @@ spring.datasource.url=jdbc:sqlite:questionary.db
 spring.datasource.driver-class-name=org.sqlite.JDBC
 spring.jpa.database-platform=org.hibernate.community.dialect.SQLiteDialect
 spring.datasource.hikari.maximum-pool-size=1   # prevent SQLITE_BUSY
+spring.jpa.hibernate.ddl-auto=update           # schema auto-migrates on startup
 ```
-DB file is created in the working directory where the JAR is launched.
+DB file is created in the working directory where the JAR/WAR is launched. For an external Tomcat, override with:
+```bash
+export JAVA_OPTS="-Dspring.datasource.url=jdbc:sqlite:/absolute/path/questionary.db"
+```
 
 ### Import File Format
 ```
-?Question text here
+#Question text here
 Answer line 1
 Answer line 2
 
-?Next question
+#Next question
 Answer
 ```
-- Lines starting with `?` begin a new question block (the `?` is stripped)
+- Lines starting with `#` begin a new question block (the `#` is stripped)
 - Subsequent non-blank lines accumulate as the answer
-- Blank lines are ignored; only a new `?` line closes a block
+- Blank lines are ignored; only a new `#` line closes a block
 
 ---
 

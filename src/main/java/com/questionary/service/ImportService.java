@@ -18,16 +18,16 @@ public class ImportService {
      * Parses a .txt InputStream into Question objects (not persisted).
      *
      * Format:
-     *   ?Question text
+     *   #Question text
      *   Answer line 1
      *   Answer line 2
      *
-     *   ?Next question
+     *   #Next question
      *   Answer
      *
-     * Lines starting with '?' begin a new block.
+     * Lines starting with '#' begin a new block.
      * Non-blank lines below accumulate as answer.
-     * Blank lines are ignored; only a new '?' line closes a block.
+     * Blank lines are ignored; only a new '#' line closes a block.
      */
     public List<Question> parse(InputStream inputStream) throws IOException {
         List<Question> questions = new ArrayList<>();
@@ -41,7 +41,7 @@ public class ImportService {
             String line;
             while ((line = reader.readLine()) != null) {
                 String cleanLine = line.strip();
-                if (cleanLine.startsWith("?")) {
+                if (cleanLine.startsWith("#")) {
                     if (currentQuestion != null) {
                         questions.add(build(currentQuestion, answerLines, order++));
                         answerLines.clear();

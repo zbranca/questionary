@@ -29,6 +29,14 @@ public class QuestionService {
         return repo.findFirstByStatusIsNullAndIdNotOrderBySortOrderAsc(id);
     }
 
+    public Optional<Question> findNextFailed() {
+        return repo.findFirstByStatusOrderBySortOrderAsc("FAILED");
+    }
+
+    public Optional<Question> findNextFailedExcluding(Long id) {
+        return repo.findFirstByStatusAndIdNotOrderBySortOrderAsc("FAILED", id);
+    }
+
     public Optional<Question> findById(Long id) {
         return repo.findById(id);
     }

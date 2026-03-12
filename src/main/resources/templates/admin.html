@@ -31,7 +31,7 @@
     <div class="card">
         <h2>Import Questions</h2>
         <p class="hint">
-            Upload a <code>.txt</code> file. Lines starting with <code>?</code> are questions;
+            Upload a <code>.txt</code> file. Lines starting with <code>#</code> are questions;
             the following lines are the official answer. Blank lines separate questions.
         </p>
         <form th:action="@{/admin/import}" method="post" enctype="multipart/form-data" class="import-form">
@@ -44,6 +44,11 @@
     <div class="card danger-zone">
         <h2>Manage</h2>
         <div class="danger-actions">
+            <form th:action="@{/admin/toggle-failed-mode}" method="post" style="display:inline">
+                <button type="submit" th:class="${failedOnlyMode} ? 'btn btn-danger' : 'btn btn-outline'">
+                    <span th:text="${failedOnlyMode} ? 'Failed Mode: ON' : 'Failed Mode: OFF'"></span>
+                </button>
+            </form>
             <form th:action="@{/admin/reset-statuses}" method="post" style="display:inline">
                 <button type="submit" class="btn btn-outline"
                         onclick="return confirm('Reset all statuses to unanswered?')">

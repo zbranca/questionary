@@ -14,6 +14,10 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     Optional<Question> findFirstByStatusIsNullAndIdNotOrderBySortOrderAsc(Long id);
 
+    Optional<Question> findFirstByStatusOrderBySortOrderAsc(String status);
+
+    Optional<Question> findFirstByStatusAndIdNotOrderBySortOrderAsc(String status, Long id);
+
     long countByStatus(String status);
 
     long countByStatusIsNull();

@@ -2,9 +2,17 @@ package com.questionary;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 
 @SpringBootApplication
-public class QuestionaryApplication {
+public class QuestionaryApplication extends SpringBootServletInitializer {
+
+    @Override
+    protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
+        return application.sources(QuestionaryApplication.class);
+    }
+
     public static void main(String[] args) {
         SpringApplication.run(QuestionaryApplication.class, args);
     }
