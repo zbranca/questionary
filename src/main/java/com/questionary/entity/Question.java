@@ -16,9 +16,9 @@ public class Question {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String answerText;
 
-    // null = unanswered, "SUCCESS", "FAILED"
     @Column
-    private String status;
+    @Convert(converter = QuestionStatusConverter.class)
+    private QuestionStatus status = QuestionStatus.UNANSWERED;
 
     @Column(nullable = false)
     private int sortOrder;
@@ -39,13 +39,9 @@ public class Question {
     public String getAnswerText() { return answerText; }
     public void setAnswerText(String answerText) { this.answerText = answerText; }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public QuestionStatus getStatus() { return status; }
+    public void setStatus(QuestionStatus status) { this.status = status; }
 
     public int getSortOrder() { return sortOrder; }
     public void setSortOrder(int sortOrder) { this.sortOrder = sortOrder; }
-
-    public boolean isUnanswered() { return status == null; }
-    public boolean isSuccess()    { return "SUCCESS".equals(status); }
-    public boolean isFailed()     { return "FAILED".equals(status); }
 }

@@ -13,7 +13,7 @@
     <a href="/admin" class="brand">Admin</a>
 </nav>
 
-<main class="container">
+<main class="container" style="max-width: 920px">
 
     <!-- Flash messages -->
     <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
@@ -65,29 +65,65 @@
     </div>
 
     <!-- Question list -->
-    <div th:if="${#lists.isEmpty(questions)}" class="card empty-state">
+    <div th:if="${#lists.isEmpty(questions) and filterText == '' and filterStatus == null}" class="card empty-state">
         <p>No questions in database. Upload a .txt file to get started.</p>
     </div>
 
-    <div th:if="${!#lists.isEmpty(questions)}" class="card">
+    <div th:if="${!#lists.isEmpty(questions) or filterText != '' or filterStatus != null}" class="card">
         <h2>Questions (<span th:text="${totalCount}"></span>)</h2>
-        <table class="question-table">
+
+        <!-- Filter form -->
+        <form class="filter-form" th:action="@{/admin}" method="get">
+            <input type="text" class="filter-input" name="q"
+                   th:value="${filterText}" placeholder="Search questions..."/>
+            <select class="filter-select" name="statusFilter">
+                <option value="" th:selected="${filterStatus == null}">All</option>
+                <option value="UNANSWERED"
+                        th:selected="${filterStatus != null and filterStatus.name() == 'UNANSWERED'}">
+                    Unanswered
+                </option>
+                <option value="SUCCESS"
+                        th:selected="${filterStatus != null and filterStatus.name() == 'SUCCESS'}">
+                    Success
+                </option>
+                <option value="FAILED"
+                        th:selected="${filterStatus != null and filterStatus.name() == 'FAILED'}">
+                    Failed
+                </option>
+            </select>
+            <button type="submit" class="btn btn-secondary">Search</button>
+        </form>
+
+        <div th:if="${#lists.isEmpty(questions)}" class="empty-state" style="padding: 1.5rem 0">
+            <p>No questions match the current filter.</p>
+        </div>
+
+        <table th:if="${!#lists.isEmpty(questions)}" class="question-table">
             <thead>
                 <tr>
                     <th>#</th>
                     <th>Question</th>
                     <th>Status</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 <tr th:each="q, stat : ${questions}"
-                    th:classappend="${q.status == null} ? 'row-unanswered' : (${q.status == 'SUCCESS'} ? 'row-success' : 'row-failed')">
+                    th:classappend="${q.status.name() == 'UNANSWERED'} ? 'row-unanswered' : (${q.status.name() == 'SUCCESS'} ? 'row-success' : 'row-failed')">
                     <td th:text="${stat.index + 1}" class="col-num"></td>
                     <td th:text="${q.questionText}" class="col-question"></td>
                     <td class="col-status">
-                        <span th:if="${q.status == null}" class="badge badge-unanswered">—</span>
-                        <span th:if="${q.status == 'SUCCESS'}" class="badge badge-success">SUCCESS</span>
-                        <span th:if="${q.status == 'FAILED'}"  class="badge badge-failed">FAILED</span>
+                        <span th:if="${q.status.name() == 'UNANSWERED'}" class="badge badge-unanswered">—</span>
+                        <span th:if="${q.status.name() == 'SUCCESS'}"    class="badge badge-success">SUCCESS</span>
+                        <span th:if="${q.status.name() == 'FAILED'}"     class="badge badge-failed">FAILED</span>
+                    </td>
+                    <td class="col-actions">
+                        <button class="btn-icon" title="Edit question"
+                                th:attr="data-id=${q.id},
+                                         data-question=${q.questionText},
+                                         data-answer=${q.answerText},
+                                         data-status=${q.status.name()}"
+                                onclick="openEditModal(this)">&#9998;</button>
                     </td>
                 </tr>
             </tbody>
@@ -95,5 +131,68 @@
     </div>
 
 </main>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal">
+        <h3 id="editModalTitle">Edit Question</h3>
+
+        <form id="editForm" method="post">
+            <div class="form-group">
+                <label for="editQuestionText">Question</label>
+                <textarea id="editQuestionText" name="questionText" class="form-control" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="editAnswerText">Answer</label>
+                <textarea id="editAnswerText" name="answerText" class="form-control" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="editStatus">Status</label>
+                <select id="editStatus" name="status" class="form-control">
+                    <option value="UNANSWERED">Unanswered</option>
+                    <option value="SUCCESS">Success</option>
+                    <option value="FAILED">Failed</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-outline" onclick="closeEditModal()">Cancel</button>
+                <div class="spacer"></div>
+                <button type="button" class="btn btn-danger" id="deleteBtn"
+                        onclick="confirmDelete()">Delete</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </form>
+
+        <form id="deleteForm" method="post" style="display:none"></form>
+    </div>
+</div>
+
+<script>
+    function openEditModal(btn) {
+        const id = btn.dataset.id;
+        document.getElementById('editModalTitle').textContent = 'Edit Question #' + id;
+        document.getElementById('editQuestionText').value = btn.dataset.question;
+        document.getElementById('editAnswerText').value = btn.dataset.answer;
+        document.getElementById('editStatus').value = btn.dataset.status;
+        document.getElementById('editForm').action = '/admin/question/' + id + '/update';
+        document.getElementById('deleteForm').action = '/admin/question/' + id + '/delete';
+        document.getElementById('editModal').classList.add('active');
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').classList.remove('active');
+    }
+
+    function confirmDelete() {
+        if (confirm('Delete this question? This cannot be undone.')) {
+            document.getElementById('deleteForm').submit();
+        }
+    }
+
+    document.getElementById('editModal').addEventListener('click', function(e) {
+        if (e.target === this) closeEditModal();
+    });
+</script>
+
 </body>
 </html>

@@ -9,10 +9,11 @@ You are shown a question, draft your response mentally, reveal the official answ
 ## Features
 
 - **Quiz mode** — one question at a time with a draft textarea
-- **Answer reveal** — show the official answer on demand, then mark success/fail
+- **Answer reveal** — submit your draft, then reveal the official answer and mark success/fail
+- **Failed-only mode** — toggle to cycle through only previously failed questions
 - **Skip** — move to the next unanswered question without marking
 - **Progress bar** — tracks answered vs. remaining questions
-- **Admin page** — import questions from a `.txt` file; reset or delete all
+- **Admin page** — import questions from a `.txt` file; search/filter by text or status; edit or delete individual questions; reset or delete all
 - **Persistent status** — success/fail status saved in SQLite; draft text is never stored
 
 ---
@@ -48,21 +49,24 @@ The SQLite database file `questionary.db` is created automatically in the workin
 Questions are imported from plain `.txt` files:
 
 ```
-?What is the capital of France?
+#What is the capital of France?
 Paris is the capital of France.
 It has been the capital since medieval times.
 
-?What is the chemical symbol for water?
+#What is the chemical symbol for water?
 H2O — two hydrogen atoms bonded to one oxygen atom.
 
-?What does CPU stand for?
+@This line is a comment and will be ignored
+
+#What does CPU stand for?
 Central Processing Unit.
 It is the primary component that executes instructions in a computer.
 ```
 
 **Rules:**
-- A line starting with `?` begins a new question (the `?` is stripped from the text)
-- Lines below (until the next `?` line) are the official answer
+- A line starting with `#` begins a new question (the `#` is stripped from the text)
+- Lines below (until the next `#` line) are the official answer
+- A line starting with `@` is a comment and is ignored
 - Blank lines are ignored and used as visual separators
 
 ---
@@ -71,11 +75,10 @@ It is the primary component that executes instructions in a computer.
 
 | URL | Description |
 |-----|-------------|
-| `/quiz` | Redirects to the first unanswered question |
+| `/quiz` | Redirects to the first unanswered (or failed in failed-only mode) question |
 | `/quiz/{id}` | Shows a specific question |
-| `/quiz/{id}?showAnswer=true` | Shows the question with the official answer revealed |
 | `/quiz/done` | Summary screen after all questions are reviewed |
-| `/admin` | Import questions, view list, reset or delete |
+| `/admin` | Import questions, search/filter list, edit/delete, reset or delete all |
 
 ---
 
@@ -95,10 +98,13 @@ It is the primary component that executes instructions in a computer.
 ```
 src/main/java/com/questionary/
 ├── QuestionaryApplication.java
-├── entity/Question.java
+├── entity/
+│   ├── Question.java
+│   ├── QuestionStatus.java          # Enum: UNANSWERED, SUCCESS, FAILED
+│   └── QuestionStatusConverter.java # JPA converter (UNANSWERED ↔ null in DB)
 ├── repository/QuestionRepository.java
 ├── service/
-│   ├── ImportService.java       # .txt parser
+│   ├── ImportService.java           # .txt parser
 │   └── QuestionService.java
 └── controller/
     ├── QuizController.java

@@ -1,6 +1,7 @@
 package com.questionary.controller;
 
 import com.questionary.entity.Question;
+import com.questionary.entity.QuestionStatus;
 import com.questionary.service.QuestionService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
@@ -38,7 +39,7 @@ public class QuizController {
     }
 
     private boolean isFailedMode(HttpSession session) {
-        return Boolean.TRUE.equals(session.getAttribute("failedOnlyMode"));
+        return Boolean.TRUE.equals(session.getAttribute(AdminController.FAILED_ONLY_MODE));
     }
 
     @GetMapping("/done")
@@ -82,7 +83,7 @@ public class QuizController {
         model.addAttribute("question", question);
         model.addAttribute("showAnswer", showAnswer);
         model.addAttribute("draft", draft);
-        model.addAttribute("failedOnlyMode", failedOnlyMode);
+        model.addAttribute(AdminController.FAILED_ONLY_MODE, failedOnlyMode);
         model.addAttribute("totalCount", questionService.countTotal());
         model.addAttribute("unansweredCount", questionService.countUnanswered());
         model.addAttribute("successCount", questionService.countSuccess());
@@ -108,12 +109,10 @@ public class QuizController {
     @PostMapping("/{id}/mark")
     public String mark(
             @PathVariable Long id,
-            @RequestParam String status,
+            @RequestParam QuestionStatus status,
             HttpSession session) {
 
-        if ("SUCCESS".equals(status) || "FAILED".equals(status)) {
-            questionService.markStatus(id, status);
-        }
+        questionService.markStatus(id, status);
         if (isFailedMode(session)) {
             return questionService.findNextFailed()
                     .map(next -> REDIRECT_QUIZ + next.getId())

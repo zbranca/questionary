@@ -22,10 +22,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```
 src/main/java/com/questionary/
 ├── QuestionaryApplication.java       # Entry point
-├── entity/Question.java              # JPA entity
+├── entity/
+│   ├── Question.java                 # JPA entity
+│   ├── QuestionStatus.java           # Enum: UNANSWERED, SUCCESS, FAILED
+│   └── QuestionStatusConverter.java  # JPA converter (UNANSWERED ↔ null)
 ├── repository/QuestionRepository.java
 ├── service/
-│   ├── ImportService.java            # .txt file parser (no Spring deps)
+│   ├── ImportService.java            # .txt file parser
 │   └── QuestionService.java          # Business logic
 └── controller/
     ├── QuizController.java           # Quiz flow
@@ -45,28 +48,35 @@ src/main/resources/
 ## Key Architecture Decisions
 
 ### Entity: `Question`
-- `status` field: `null` = unanswered, `"SUCCESS"`, `"FAILED"` (plain String, not enum)
+- `status` field: `QuestionStatus` enum — `UNANSWERED`, `SUCCESS`, `FAILED`
+- `QuestionStatusConverter` maps `UNANSWERED` ↔ `null` in the DB column (so legacy null rows work)
 - `sortOrder` preserves import sequence for deterministic "next question" ordering
 - User-typed draft is never persisted — only `status` is saved
 
 ### Quiz URL Contract
 | Method | URL | Action |
 |--------|-----|--------|
-| GET | `/quiz` | Redirect to first unanswered question |
+| GET | `/quiz` | Redirect to first unanswered (or first failed in failed-only mode) |
 | GET | `/quiz/{id}` | Show question (answer hidden) |
-| GET | `/quiz/{id}?showAnswer=true` | Show question with answer revealed |
-| POST | `/quiz/{id}/skip` | Skip → next unanswered (excluding current) |
+| POST | `/quiz/{id}/reveal` | Post draft text → render question with answer revealed |
+| POST | `/quiz/{id}/skip` | Skip → next unanswered/failed (excluding current) |
 | POST | `/quiz/{id}/mark?status=SUCCESS\|FAILED` | Persist status → next |
 | GET | `/quiz/done` | Summary screen |
 
-"Show Answer" is a plain `<a>` link — no POST — so browser history works cleanly.
+"Show Answer" submits a form via POST, sending the draft textarea content to `/quiz/{id}/reveal`.
+
+### Failed-Only Mode
+A session flag `failedOnlyMode` restricts quiz navigation to questions with `FAILED` status. Toggled via `POST /admin/toggle-failed-mode`; state shown in both the admin and quiz pages.
 
 ### Admin URL Contract
 | Method | URL | Action |
 |--------|-----|--------|
-| GET | `/admin` | Question list + stats + upload form |
+| GET | `/admin` | Question list + stats + upload form (supports `?q=` text search and `?statusFilter=` enum filter) |
 | POST | `/admin/import` | Upload `.txt`, parse and append to DB |
-| POST | `/admin/reset-statuses` | Set all status → null |
+| POST | `/admin/toggle-failed-mode` | Toggle session-based failed-only quiz mode |
+| POST | `/admin/question/{id}/update` | Edit question text, answer text, and status |
+| POST | `/admin/question/{id}/delete` | Delete single question |
+| POST | `/admin/reset-statuses` | Set all statuses → UNANSWERED |
 | POST | `/admin/delete-all` | Delete all questions |
 
 All mutations follow the POST-Redirect-GET pattern with `RedirectAttributes` flash messages.
@@ -92,8 +102,11 @@ Answer line 2
 
 #Next question
 Answer
+
+@This is a comment line and is ignored
 ```
 - Lines starting with `#` begin a new question block (the `#` is stripped)
+- Lines starting with `@` are comment lines and are skipped
 - Subsequent non-blank lines accumulate as the answer
 - Blank lines are ignored; only a new `#` line closes a block
 

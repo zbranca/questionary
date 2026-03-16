@@ -1,6 +1,7 @@
 package com.questionary.repository;
 
 import com.questionary.entity.Question;
+import com.questionary.entity.QuestionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -14,11 +15,11 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     Optional<Question> findFirstByStatusIsNullAndIdNotOrderBySortOrderAsc(Long id);
 
-    Optional<Question> findFirstByStatusOrderBySortOrderAsc(String status);
+    Optional<Question> findFirstByStatusOrderBySortOrderAsc(QuestionStatus status);
 
-    Optional<Question> findFirstByStatusAndIdNotOrderBySortOrderAsc(String status, Long id);
+    Optional<Question> findFirstByStatusAndIdNotOrderBySortOrderAsc(QuestionStatus status, Long id);
 
-    long countByStatus(String status);
+    long countByStatus(QuestionStatus status);
 
     long countByStatusIsNull();
 }

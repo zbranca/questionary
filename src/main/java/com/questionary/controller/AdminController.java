@@ -1,5 +1,6 @@
 package com.questionary.controller;
 
+import com.questionary.entity.QuestionStatus;
 import com.questionary.service.QuestionService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
@@ -12,30 +13,47 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequestMapping("/admin")
 public class AdminController {
 
-  public static final String REDIRECT_ADMIN = "redirect:/admin";
-  public static final String SUCCESS_MESSAGE = "successMessage";
-  public static final String ERROR_MESSAGE = "errorMessage";
-  private final QuestionService questionService;
+    public static final String REDIRECT_ADMIN = "redirect:/admin";
+    public static final String SUCCESS_MESSAGE = "successMessage";
+    public static final String ERROR_MESSAGE = "errorMessage";
+    public static final String FAILED_ONLY_MODE = "failedOnlyMode";
+    private final QuestionService questionService;
 
     public AdminController(QuestionService questionService) {
         this.questionService = questionService;
     }
 
     @GetMapping
-    public String adminPage(Model model, HttpSession session) {
-        model.addAttribute("questions", questionService.findAll());
+    public String adminPage(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String statusFilter,
+            Model model,
+            HttpSession session) {
+
+        QuestionStatus statusEnum = null;
+        if (statusFilter != null && !statusFilter.isBlank()) {
+            try {
+                statusEnum = QuestionStatus.valueOf(statusFilter);
+            } catch (IllegalArgumentException e) {
+                // invalid status value — treat as "no filter"
+            }
+        }
+
+        model.addAttribute("questions", questionService.findFiltered(q, statusEnum));
         model.addAttribute("totalCount", questionService.countTotal());
         model.addAttribute("unansweredCount", questionService.countUnanswered());
         model.addAttribute("successCount", questionService.countSuccess());
         model.addAttribute("failedCount", questionService.countFailed());
-        model.addAttribute("failedOnlyMode", Boolean.TRUE.equals(session.getAttribute("failedOnlyMode")));
+        model.addAttribute(FAILED_ONLY_MODE, Boolean.TRUE.equals(session.getAttribute(FAILED_ONLY_MODE)));
+        model.addAttribute("filterText", q != null ? q : "");
+        model.addAttribute("filterStatus", statusEnum);
         return "admin";
     }
 
     @PostMapping("/toggle-failed-mode")
     public String toggleFailedMode(HttpSession session) {
-        Boolean current = (Boolean) session.getAttribute("failedOnlyMode");
-        session.setAttribute("failedOnlyMode", !Boolean.TRUE.equals(current));
+        Boolean current = (Boolean) session.getAttribute(FAILED_ONLY_MODE);
+        session.setAttribute(FAILED_ONLY_MODE, !Boolean.TRUE.equals(current));
         return REDIRECT_ADMIN;
     }
 
@@ -46,21 +64,47 @@ public class AdminController {
 
         if (file.isEmpty()) {
             redirectAttrs.addFlashAttribute(ERROR_MESSAGE, "Please select a file.");
-            return REDIRECT_ADMIN;
+        } else {
+            String originalName = file.getOriginalFilename();
+            if (originalName == null || !originalName.toLowerCase().endsWith(".txt")) {
+                redirectAttrs.addFlashAttribute(ERROR_MESSAGE, "Only .txt files are accepted.");
+            } else {
+                try {
+                    int count = questionService.importFromFile(file);
+                    redirectAttrs.addFlashAttribute(SUCCESS_MESSAGE,
+                            "Imported " + count + " question(s) successfully.");
+                } catch (Exception e) {
+                    redirectAttrs.addFlashAttribute(ERROR_MESSAGE,
+                            "Import failed: " + e.getMessage());
+                }
+            }
         }
-        String originalName = file.getOriginalFilename();
-        if (originalName == null || !originalName.toLowerCase().endsWith(".txt")) {
-            redirectAttrs.addFlashAttribute(ERROR_MESSAGE, "Only .txt files are accepted.");
-            return REDIRECT_ADMIN;
-        }
+        return REDIRECT_ADMIN;
+    }
+
+    @PostMapping("/question/{id}/update")
+    public String updateQuestion(
+            @PathVariable Long id,
+            @RequestParam String questionText,
+            @RequestParam String answerText,
+            @RequestParam String status,
+            RedirectAttributes redirectAttrs) {
         try {
-            int count = questionService.importFromFile(file);
-            redirectAttrs.addFlashAttribute(SUCCESS_MESSAGE,
-                    "Imported " + count + " question(s) successfully.");
+            QuestionStatus statusEnum = QuestionStatus.valueOf(status);
+            questionService.updateQuestion(id, questionText, answerText, statusEnum);
+            redirectAttrs.addFlashAttribute(SUCCESS_MESSAGE, "Question updated.");
         } catch (Exception e) {
-            redirectAttrs.addFlashAttribute(ERROR_MESSAGE,
-                    "Import failed: " + e.getMessage());
+            redirectAttrs.addFlashAttribute(ERROR_MESSAGE, "Update failed: " + e.getMessage());
         }
+        return REDIRECT_ADMIN;
+    }
+
+    @PostMapping("/question/{id}/delete")
+    public String deleteQuestion(
+            @PathVariable Long id,
+            RedirectAttributes redirectAttrs) {
+        questionService.deleteById(id);
+        redirectAttrs.addFlashAttribute(SUCCESS_MESSAGE, "Question deleted.");
         return REDIRECT_ADMIN;
     }
 

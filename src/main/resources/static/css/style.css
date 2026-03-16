@@ -318,3 +318,104 @@ body {
 .badge-success    { background: #c6f6d5; color: #276749; }
 .badge-failed     { background: #fed7d7; color: #9b2c2c; }
 .badge-unanswered { color: #a0aec0; }
+
+.col-actions { width: 56px; text-align: center; }
+
+/* ===== Filter Form ===== */
+.filter-form {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+.filter-input, .filter-select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.92rem;
+    color: #4a5568;
+    background: #f7fafc;
+}
+.filter-input { flex: 1; min-width: 180px; }
+.filter-input:focus, .filter-select:focus {
+    outline: none;
+    border-color: #667eea;
+    background: #fff;
+}
+
+/* ===== Icon Button ===== */
+.btn-icon {
+    background: none;
+    border: 1px solid #cbd5e0;
+    border-radius: 5px;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: #4a5568;
+    transition: background 0.15s;
+}
+.btn-icon:hover { background: #edf2f7; }
+
+/* ===== Modal ===== */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+}
+.modal-overlay.active { display: flex; }
+.modal {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    padding: 2rem;
+    width: 100%;
+    max-width: 540px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+.modal h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 1.25rem;
+}
+.form-group { margin-bottom: 1rem; }
+.form-group label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #4a5568;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.35rem;
+}
+.form-control {
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: #2d3748;
+    background: #f7fafc;
+}
+.form-control:focus {
+    outline: none;
+    border-color: #667eea;
+    background: #fff;
+}
+textarea.form-control { min-height: 90px; resize: vertical; }
+.modal-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+    align-items: center;
+}
+.modal-actions .spacer { flex: 1; }

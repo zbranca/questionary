@@ -1,6 +1,7 @@
 package com.questionary.service;
 
 import com.questionary.entity.Question;
+import com.questionary.entity.QuestionStatus;
 import com.questionary.repository.QuestionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,11 +31,11 @@ public class QuestionService {
     }
 
     public Optional<Question> findNextFailed() {
-        return repo.findFirstByStatusOrderBySortOrderAsc("FAILED");
+        return repo.findFirstByStatusOrderBySortOrderAsc(QuestionStatus.FAILED);
     }
 
     public Optional<Question> findNextFailedExcluding(Long id) {
-        return repo.findFirstByStatusAndIdNotOrderBySortOrderAsc("FAILED", id);
+        return repo.findFirstByStatusAndIdNotOrderBySortOrderAsc(QuestionStatus.FAILED, id);
     }
 
     public Optional<Question> findById(Long id) {
@@ -42,7 +43,7 @@ public class QuestionService {
     }
 
     @Transactional
-    public void markStatus(Long id, String status) {
+    public void markStatus(Long id, QuestionStatus status) {
         repo.findById(id).ifPresent(q -> {
             q.setStatus(status);
             repo.save(q);
@@ -62,6 +63,30 @@ public class QuestionService {
         return repo.findAllByOrderBySortOrderAsc();
     }
 
+    public List<Question> findFiltered(String text, QuestionStatus statusFilter) {
+        List<Question> all = repo.findAllByOrderBySortOrderAsc();
+        return all.stream()
+                .filter(q -> text == null || text.isBlank() ||
+                        q.getQuestionText().toLowerCase().contains(text.toLowerCase()))
+                .filter(q -> statusFilter == null || q.getStatus() == statusFilter)
+                .toList();
+    }
+
+    @Transactional
+    public void updateQuestion(Long id, String questionText, String answerText, QuestionStatus status) {
+        repo.findById(id).ifPresent(q -> {
+            q.setQuestionText(questionText);
+            q.setAnswerText(answerText);
+            q.setStatus(status);
+            repo.save(q);
+        });
+    }
+
+    @Transactional
+    public void deleteById(Long id) {
+        repo.deleteById(id);
+    }
+
     @Transactional
     public void deleteAll() {
         repo.deleteAll();
@@ -70,12 +95,12 @@ public class QuestionService {
     @Transactional
     public void resetAllStatuses() {
         List<Question> all = repo.findAll();
-        all.forEach(q -> q.setStatus(null));
+        all.forEach(q -> q.setStatus(QuestionStatus.UNANSWERED));
         repo.saveAll(all);
     }
 
     public long countTotal()      { return repo.count(); }
     public long countUnanswered() { return repo.countByStatusIsNull(); }
-    public long countSuccess()    { return repo.countByStatus("SUCCESS"); }
-    public long countFailed()     { return repo.countByStatus("FAILED"); }
+    public long countSuccess()    { return repo.countByStatus(QuestionStatus.SUCCESS); }
+    public long countFailed()     { return repo.countByStatus(QuestionStatus.FAILED); }
 }
