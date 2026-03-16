@@ -23,11 +23,11 @@ public class QuestionService {
     }
 
     public Optional<Question> findNextUnanswered() {
-        return repo.findFirstByStatusIsNullOrderBySortOrderAsc();
+        return repo.findFirstUnanswered(QuestionStatus.UNANSWERED);
     }
 
     public Optional<Question> findNextUnansweredExcluding(Long id) {
-        return repo.findFirstByStatusIsNullAndIdNotOrderBySortOrderAsc(id);
+        return repo.findFirstUnansweredExcluding(QuestionStatus.UNANSWERED, id);
     }
 
     public Optional<Question> findNextFailed() {
@@ -59,17 +59,20 @@ public class QuestionService {
         return parsed.size();
     }
 
-    public List<Question> findAll() {
-        return repo.findAllByOrderBySortOrderAsc();
-    }
-
+    /**
+     * Returns questions matching optional text search and status filter.
+     * Filtering is performed at the SQL level. Passing null/blank text or null status
+     * removes the respective filter.
+     */
     public List<Question> findFiltered(String text, QuestionStatus statusFilter) {
-        List<Question> all = repo.findAllByOrderBySortOrderAsc();
-        return all.stream()
-                .filter(q -> text == null || text.isBlank() ||
-                        q.getQuestionText().toLowerCase().contains(text.toLowerCase()))
-                .filter(q -> statusFilter == null || q.getStatus() == statusFilter)
-                .toList();
+        String pattern = (text != null && !text.isBlank()) ? "%" + text.toLowerCase() + "%" : null;
+        if (statusFilter == null) {
+            return repo.findFilteredNoStatus(pattern);
+        }
+        if (statusFilter == QuestionStatus.UNANSWERED) {
+            return repo.findFilteredUnanswered(pattern, QuestionStatus.UNANSWERED);
+        }
+        return repo.findFilteredByStatus(pattern, statusFilter);
     }
 
     @Transactional
@@ -100,7 +103,7 @@ public class QuestionService {
     }
 
     public long countTotal()      { return repo.count(); }
-    public long countUnanswered() { return repo.countByStatusIsNull(); }
+    public long countUnanswered() { return repo.countUnanswered(QuestionStatus.UNANSWERED); }
     public long countSuccess()    { return repo.countByStatus(QuestionStatus.SUCCESS); }
     public long countFailed()     { return repo.countByStatus(QuestionStatus.FAILED); }
 }

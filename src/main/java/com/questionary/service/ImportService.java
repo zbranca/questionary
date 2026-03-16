@@ -17,6 +17,7 @@ public class ImportService {
      * Parses a .txt InputStream into Question objects (not persisted).
      *
      * Format:
+     * <pre>
      *   #Question text
      *   Answer line 1
      *   Answer line 2
@@ -24,9 +25,16 @@ public class ImportService {
      *   #Next question
      *   Answer
      *
-     * Lines starting with '#' begin a new block.
-     * Non-blank lines below accumulate as answer.
-     * Blank lines are ignored; only a new '#' line closes a block.
+     *   @This line is a comment and is ignored entirely
+     * </pre>
+     *
+     * Rules:
+     * <ul>
+     *   <li>Lines starting with {@code #} begin a new question block (the {@code #} is stripped).</li>
+     *   <li>Lines starting with {@code @} are comment lines and are skipped.</li>
+     *   <li>Non-blank lines below a {@code #} line accumulate as the answer.</li>
+     *   <li>Blank lines are ignored; only a new {@code #} line closes a block.</li>
+     * </ul>
      */
     public List<Question> parse(InputStream inputStream) throws IOException {
         List<Question> questions = new ArrayList<>();
@@ -37,33 +45,33 @@ public class ImportService {
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
 
-      String line;
-      while ((line = reader.readLine()) != null) {
-        String trimLine = line.strip();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String trimLine = line.strip();
 
-        if (!trimLine.startsWith("@")) {
-          if (trimLine.startsWith("#")) {
-            if (currentQuestion != null) {
-              questions.add(build(currentQuestion, answerLines, order++));
-              answerLines.clear();
+                if (!trimLine.startsWith("@")) {
+                    if (trimLine.startsWith("#")) {
+                        if (currentQuestion != null) {
+                            questions.add(build(currentQuestion, answerLines, order++));
+                            answerLines.clear();
+                        }
+                        currentQuestion = trimLine.substring(1).trim();
+                    } else if (!trimLine.isBlank()) {
+                        answerLines.add(line);
+                    }
+                }
             }
-            currentQuestion = trimLine.substring(1).trim();
-          } else if (!trimLine.isBlank()) {
-            answerLines.add(line);
-          }
-        }
-      }
 
-      // Flush last block
-      if (currentQuestion != null) {
-        questions.add(build(currentQuestion, answerLines, order));
-      }
+            // Flush last block
+            if (currentQuestion != null) {
+                questions.add(build(currentQuestion, answerLines, order));
+            }
+        }
+
+        return questions;
     }
 
-    return questions;
-  }
-
-  private Question build(String questionText, List<String> answerLines, int order) {
+    private Question build(String questionText, List<String> answerLines, int order) {
         String answer = String.join("\n", answerLines);
         return new Question(questionText, answer, order);
     }

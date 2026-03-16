@@ -419,3 +419,25 @@ textarea.form-control { min-height: 90px; resize: vertical; }
     align-items: center;
 }
 .modal-actions .spacer { flex: 1; }
+
+/* ===== Failed Mode Progress Bar ===== */
+.progress-bar-failed { background: #fc8181; }
+
+/* ===== Quiz Navbar Mode Toggle ===== */
+.nav-right { display: flex; align-items: center; gap: 1rem; }
+.nav-mode-btn {
+    background: transparent;
+    border: 1px solid #4a5568;
+    color: #a0aec0;
+    border-radius: 5px;
+    padding: 0.3rem 0.7rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+.nav-mode-btn:hover { background: #4a5568; color: #fff; }
+.nav-mode-btn-active { background: #fc8181; border-color: #fc8181; color: #fff; }
+.nav-mode-btn-active:hover { opacity: 0.88; }
+
+/* ===== Done Icon Variant ===== */
+.done-icon-failed { color: #fc8181; }

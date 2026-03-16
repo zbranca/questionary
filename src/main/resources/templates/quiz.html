@@ -10,23 +10,42 @@
 
 <nav class="navbar">
     <a href="/quiz" class="brand">Questionary</a>
-    <a href="/admin" class="nav-link">Admin</a>
+    <div class="nav-right">
+        <form th:action="@{/quiz/toggle-failed-mode}" method="post">
+            <button type="submit"
+                    th:class="${failedOnlyMode} ? 'nav-mode-btn nav-mode-btn-active' : 'nav-mode-btn'"
+                    th:title="${failedOnlyMode} ? 'Exit failed-only mode' : 'Switch to failed-only mode'">
+                <span th:text="${failedOnlyMode} ? 'Failed Mode' : 'Normal Mode'"></span>
+            </button>
+        </form>
+        <a href="/admin" class="nav-link">Admin</a>
+    </div>
 </nav>
 
 <main class="container">
 
-    <!-- Progress bar -->
-    <div class="progress-bar-wrap">
+    <!-- Normal mode: answered/total progress bar -->
+    <div th:if="${!failedOnlyMode}" class="progress-bar-wrap">
         <div class="progress-bar"
              th:style="'width: ' + (${totalCount} > 0 ? (${successCount} + ${failedCount}) * 100 / ${totalCount} : 0) + '%'">
         </div>
     </div>
+
+    <!-- Failed mode: progress bar showing how many failed questions resolved since session start -->
+    <div th:if="${failedOnlyMode}" class="progress-bar-wrap">
+        <div class="progress-bar progress-bar-failed"
+             th:style="'width: ' + (${failedModeInitial} > 0 ? (${failedModeInitial} - ${failedCount}) * 100 / ${failedModeInitial} : 0) + '%'">
+        </div>
+    </div>
+
     <div class="stats">
-        <span class="stat">Total: <strong th:text="${totalCount}"></strong></span>
-        <span class="stat unanswered">Remaining: <strong th:text="${unansweredCount}"></strong></span>
+        <span th:if="${!failedOnlyMode}" class="stat">Total: <strong th:text="${totalCount}"></strong></span>
+        <span th:if="${!failedOnlyMode}" class="stat unanswered">Remaining: <strong th:text="${unansweredCount}"></strong></span>
         <span class="stat success">Success: <strong th:text="${successCount}"></strong></span>
         <span class="stat failed">Failed: <strong th:text="${failedCount}"></strong></span>
+        <span th:if="${failedOnlyMode}" class="stat">Total: <strong th:text="${totalCount}"></strong></span>
     </div>
+
     <div th:if="${failedOnlyMode}" class="alert alert-error" style="margin-bottom:0.5rem">
         Failed Mode — only failed questions are shown.
     </div>

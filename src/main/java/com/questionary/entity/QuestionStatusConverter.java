@@ -8,13 +8,16 @@ public class QuestionStatusConverter implements AttributeConverter<QuestionStatu
 
     @Override
     public String convertToDatabaseColumn(QuestionStatus status) {
-        if (status == null || status == QuestionStatus.UNANSWERED) return null;
-        return status.name();
+        return (status == null ? QuestionStatus.UNANSWERED : status).name();
     }
 
     @Override
     public QuestionStatus convertToEntityAttribute(String dbData) {
-        if (dbData == null) return QuestionStatus.UNANSWERED;
-        return QuestionStatus.valueOf(dbData);
+        if (dbData == null) return QuestionStatus.UNANSWERED; // backward-compat for legacy null rows
+        try {
+            return QuestionStatus.valueOf(dbData);
+        } catch (IllegalArgumentException e) {
+            return QuestionStatus.UNANSWERED;
+        }
     }
 }

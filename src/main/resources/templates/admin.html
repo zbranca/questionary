@@ -32,7 +32,8 @@
         <h2>Import Questions</h2>
         <p class="hint">
             Upload a <code>.txt</code> file. Lines starting with <code>#</code> are questions;
-            the following lines are the official answer. Blank lines separate questions.
+            the following lines are the official answer. Lines starting with <code>@</code> are
+            comments and are ignored. Blank lines separate questions.
         </p>
         <form th:action="@{/admin/import}" method="post" enctype="multipart/form-data" class="import-form">
             <input type="file" name="file" accept=".txt" required class="file-input"/>
@@ -138,6 +139,8 @@
         <h3 id="editModalTitle">Edit Question</h3>
 
         <form id="editForm" method="post">
+            <input type="hidden" id="editQ" name="q" />
+            <input type="hidden" id="editStatusFilter" name="statusFilter" />
             <div class="form-group">
                 <label for="editQuestionText">Question</label>
                 <textarea id="editQuestionText" name="questionText" class="form-control" required></textarea>
@@ -163,19 +166,27 @@
             </div>
         </form>
 
-        <form id="deleteForm" method="post" style="display:none"></form>
+        <form id="deleteForm" method="post" style="display:none">
+            <input type="hidden" id="deleteQ" name="q" />
+            <input type="hidden" id="deleteStatusFilter" name="statusFilter" />
+        </form>
     </div>
 </div>
 
 <script>
     function openEditModal(btn) {
         const id = btn.dataset.id;
+        const params = new URLSearchParams(window.location.search);
         document.getElementById('editModalTitle').textContent = 'Edit Question #' + id;
         document.getElementById('editQuestionText').value = btn.dataset.question;
         document.getElementById('editAnswerText').value = btn.dataset.answer;
         document.getElementById('editStatus').value = btn.dataset.status;
         document.getElementById('editForm').action = '/admin/question/' + id + '/update';
         document.getElementById('deleteForm').action = '/admin/question/' + id + '/delete';
+        document.getElementById('editQ').value = params.get('q') || '';
+        document.getElementById('editStatusFilter').value = params.get('statusFilter') || '';
+        document.getElementById('deleteQ').value = params.get('q') || '';
+        document.getElementById('deleteStatusFilter').value = params.get('statusFilter') || '';
         document.getElementById('editModal').classList.add('active');
     }
 

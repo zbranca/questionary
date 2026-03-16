@@ -17,6 +17,8 @@ public class AdminController {
     public static final String SUCCESS_MESSAGE = "successMessage";
     public static final String ERROR_MESSAGE = "errorMessage";
     public static final String FAILED_ONLY_MODE = "failedOnlyMode";
+    public static final String FAILED_MODE_INITIAL = "failedModeInitialCount";
+
     private final QuestionService questionService;
 
     public AdminController(QuestionService questionService) {
@@ -53,7 +55,11 @@ public class AdminController {
     @PostMapping("/toggle-failed-mode")
     public String toggleFailedMode(HttpSession session) {
         Boolean current = (Boolean) session.getAttribute(FAILED_ONLY_MODE);
-        session.setAttribute(FAILED_ONLY_MODE, !Boolean.TRUE.equals(current));
+        boolean turningOn = !Boolean.TRUE.equals(current);
+        session.setAttribute(FAILED_ONLY_MODE, turningOn);
+        if (turningOn) {
+            session.setAttribute(FAILED_MODE_INITIAL, questionService.countFailed());
+        }
         return REDIRECT_ADMIN;
     }
 
@@ -87,24 +93,37 @@ public class AdminController {
             @PathVariable Long id,
             @RequestParam String questionText,
             @RequestParam String answerText,
-            @RequestParam String status,
+            @RequestParam QuestionStatus status,
+            @RequestParam(required = false, defaultValue = "") String q,
+            @RequestParam(required = false, defaultValue = "") String statusFilter,
             RedirectAttributes redirectAttrs) {
-        try {
-            QuestionStatus statusEnum = QuestionStatus.valueOf(status);
-            questionService.updateQuestion(id, questionText, answerText, statusEnum);
-            redirectAttrs.addFlashAttribute(SUCCESS_MESSAGE, "Question updated.");
-        } catch (Exception e) {
-            redirectAttrs.addFlashAttribute(ERROR_MESSAGE, "Update failed: " + e.getMessage());
+
+        if (questionText.isBlank() || answerText.isBlank()) {
+            redirectAttrs.addFlashAttribute(ERROR_MESSAGE, "Question and answer cannot be blank.");
+        } else {
+            try {
+                questionService.updateQuestion(id, questionText, answerText, status);
+                redirectAttrs.addFlashAttribute(SUCCESS_MESSAGE, "Question updated.");
+            } catch (Exception e) {
+                redirectAttrs.addFlashAttribute(ERROR_MESSAGE, "Update failed: " + e.getMessage());
+            }
         }
+        if (!q.isBlank()) redirectAttrs.addAttribute("q", q);
+        if (!statusFilter.isBlank()) redirectAttrs.addAttribute("statusFilter", statusFilter);
         return REDIRECT_ADMIN;
     }
 
     @PostMapping("/question/{id}/delete")
     public String deleteQuestion(
             @PathVariable Long id,
+            @RequestParam(required = false, defaultValue = "") String q,
+            @RequestParam(required = false, defaultValue = "") String statusFilter,
             RedirectAttributes redirectAttrs) {
+
         questionService.deleteById(id);
         redirectAttrs.addFlashAttribute(SUCCESS_MESSAGE, "Question deleted.");
+        if (!q.isBlank()) redirectAttrs.addAttribute("q", q);
+        if (!statusFilter.isBlank()) redirectAttrs.addAttribute("statusFilter", statusFilter);
         return REDIRECT_ADMIN;
     }
 

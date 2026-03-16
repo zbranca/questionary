@@ -14,10 +14,11 @@ import java.util.Optional;
 @RequestMapping("/quiz")
 public class QuizController {
 
-  public static final String REDIRECT_QUIZ = "redirect:/quiz/";
-  public static final String REDIRECT_QUIZ_DONE = "redirect:/quiz/done";
-  public static final String REDIRECT_QUIZ_NO_SLASH = "redirect:/quiz";
-  private final QuestionService questionService;
+    public static final String REDIRECT_QUIZ = "redirect:/quiz/";
+    public static final String REDIRECT_QUIZ_DONE = "redirect:/quiz/done";
+    public static final String REDIRECT_QUIZ_NO_SLASH = "redirect:/quiz";
+
+    private final QuestionService questionService;
 
     public QuizController(QuestionService questionService) {
         this.questionService = questionService;
@@ -38,16 +39,36 @@ public class QuizController {
                 .orElse(REDIRECT_QUIZ_DONE);
     }
 
+    /** Explicitly enables failed-only mode and records the initial failed count for progress tracking. */
+    @PostMapping("/start-failed-mode")
+    public String startFailedMode(HttpSession session) {
+        session.setAttribute(AdminController.FAILED_ONLY_MODE, true);
+        session.setAttribute(AdminController.FAILED_MODE_INITIAL, questionService.countFailed());
+        return REDIRECT_QUIZ_NO_SLASH;
+    }
+
+    /** Toggles failed-only mode; records the initial failed count when turning on. */
+    @PostMapping("/toggle-failed-mode")
+    public String toggleFailedMode(HttpSession session) {
+        boolean turningOn = !isFailedMode(session);
+        session.setAttribute(AdminController.FAILED_ONLY_MODE, turningOn);
+        if (turningOn) {
+            session.setAttribute(AdminController.FAILED_MODE_INITIAL, questionService.countFailed());
+        }
+        return REDIRECT_QUIZ_NO_SLASH;
+    }
+
     private boolean isFailedMode(HttpSession session) {
         return Boolean.TRUE.equals(session.getAttribute(AdminController.FAILED_ONLY_MODE));
     }
 
     @GetMapping("/done")
-    public String done(Model model) {
+    public String done(Model model, HttpSession session) {
         model.addAttribute("totalCount", questionService.countTotal());
         model.addAttribute("successCount", questionService.countSuccess());
         model.addAttribute("failedCount", questionService.countFailed());
         model.addAttribute("unansweredCount", questionService.countUnanswered());
+        model.addAttribute(AdminController.FAILED_ONLY_MODE, isFailedMode(session));
         return "quiz-done";
     }
 
@@ -60,7 +81,7 @@ public class QuizController {
         Optional<Question> opt = questionService.findById(id);
         if (opt.isEmpty()) return REDIRECT_QUIZ_NO_SLASH;
 
-        addQuizAttributes(model, opt.get(), false, "", isFailedMode(session));
+        addQuizAttributes(model, opt.get(), false, "", session);
         return "quiz";
     }
 
@@ -75,19 +96,22 @@ public class QuizController {
         Optional<Question> opt = questionService.findById(id);
         if (opt.isEmpty()) return REDIRECT_QUIZ_NO_SLASH;
 
-        addQuizAttributes(model, opt.get(), true, draft, isFailedMode(session));
+        addQuizAttributes(model, opt.get(), true, draft, session);
         return "quiz";
     }
 
-    private void addQuizAttributes(Model model, Question question, boolean showAnswer, String draft, boolean failedOnlyMode) {
+    private void addQuizAttributes(Model model, Question question, boolean showAnswer, String draft, HttpSession session) {
+        Long initial = (Long) session.getAttribute(AdminController.FAILED_MODE_INITIAL);
+        long currentFailed = questionService.countFailed();
         model.addAttribute("question", question);
         model.addAttribute("showAnswer", showAnswer);
         model.addAttribute("draft", draft);
-        model.addAttribute(AdminController.FAILED_ONLY_MODE, failedOnlyMode);
+        model.addAttribute(AdminController.FAILED_ONLY_MODE, isFailedMode(session));
         model.addAttribute("totalCount", questionService.countTotal());
         model.addAttribute("unansweredCount", questionService.countUnanswered());
         model.addAttribute("successCount", questionService.countSuccess());
-        model.addAttribute("failedCount", questionService.countFailed());
+        model.addAttribute("failedCount", currentFailed);
+        model.addAttribute("failedModeInitial", initial != null ? initial : currentFailed);
     }
 
     @PostMapping("/{id}/skip")

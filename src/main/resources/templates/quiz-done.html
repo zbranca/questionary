@@ -15,9 +15,11 @@
 
 <main class="container">
     <div class="card done-card">
-        <div class="done-icon">&#10003;</div>
-        <h2>All Done!</h2>
-        <p>You have reviewed all questions.</p>
+        <div class="done-icon" th:classappend="${failedOnlyMode} ? ' done-icon-failed' : ''">&#10003;</div>
+        <h2 th:text="${failedOnlyMode} ? 'Failed Drill Done!' : 'All Done!'">All Done!</h2>
+        <p th:text="${failedOnlyMode} ? 'You have reviewed all failed questions.' : 'You have reviewed all questions.'">
+            You have reviewed all questions.
+        </p>
 
         <div class="stats done-stats">
             <div class="stat-box success">
@@ -35,8 +37,26 @@
         </div>
 
         <div class="done-actions">
-            <a th:if="${unansweredCount > 0}" href="/quiz" class="btn btn-primary">Continue (Skipped)</a>
-            <a href="/admin" class="btn btn-outline">Go to Admin</a>
+            <!-- Normal mode actions -->
+            <a th:if="${unansweredCount > 0 and !failedOnlyMode}" href="/quiz" class="btn btn-primary">
+                Continue (<span th:text="${unansweredCount}"></span> Skipped)
+            </a>
+            <form th:if="${failedCount > 0 and !failedOnlyMode}"
+                  th:action="@{/quiz/start-failed-mode}" method="post" style="display:inline">
+                <button type="submit" class="btn btn-danger">
+                    Drill Failed (<span th:text="${failedCount}"></span>)
+                </button>
+            </form>
+
+            <!-- Failed mode actions -->
+            <a th:if="${failedOnlyMode and failedCount > 0}" href="/quiz" class="btn btn-danger">
+                Drill Again (<span th:text="${failedCount}"></span> remaining)
+            </a>
+            <form th:if="${failedOnlyMode}" th:action="@{/quiz/toggle-failed-mode}" method="post" style="display:inline">
+                <button type="submit" class="btn btn-secondary">Exit Failed Mode</button>
+            </form>
+
+            <a href="/admin" class="btn btn-outline">Admin</a>
         </div>
     </div>
 </main>
