@@ -100,15 +100,25 @@ export JAVA_OPTS="-Dspring.datasource.url=jdbc:sqlite:/absolute/path/questionary
 Answer line 1
 Answer line 2
 
+#Multi-line question — line 1
+#Line 2 of the same question
+#
+#```java
+#int x = 5;
+#```
+Answer to the multi-line question
+
 #Next question
 Answer
 
 @This is a comment line and is ignored
 ```
-- Lines starting with `#` begin a new question block (the `#` is stripped)
+- Lines starting with `#` begin or continue a question block (the `#` is stripped)
+- **Multiple consecutive `#` lines combine into a single multi-line question**
+- A bare `#` line (nothing after `#`) embeds a blank line within the question text
 - Lines starting with `@` are comment lines and are skipped
-- Subsequent non-blank lines accumulate as the answer
-- Blank lines are ignored; only a new `#` line closes a block
+- Non-`#`, non-blank lines after a question block accumulate as the answer
+- Blank file-lines are ignored in all states; a new `#` line after answer lines starts a fresh block
 
 ---
 

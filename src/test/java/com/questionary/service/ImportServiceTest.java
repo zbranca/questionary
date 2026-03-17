@@ -18,6 +18,8 @@ class ImportServiceTest {
         return service.parse(new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)));
     }
 
+    // ---- existing tests (backward-compatibility regression suite) ----
+
     @Test
     void emptyInput_returnsEmptyList() throws IOException {
         assertTrue(parse("").isEmpty());
@@ -82,5 +84,67 @@ class ImportServiceTest {
         assertEquals(1, result.size());
         assertEquals("Last question", result.get(0).getQuestionText());
         assertEquals("Final answer", result.get(0).getAnswerText());
+    }
+
+    // ---- new tests: multi-line question text ----
+
+    @Test
+    void multilineQuestion_consecutiveHashLines_merged() throws IOException {
+        String input = "#Line one\n#Line two\nAnswer\n";
+        List<Question> result = parse(input);
+        assertEquals(1, result.size());
+        assertEquals("Line one\nLine two", result.get(0).getQuestionText());
+        assertEquals("Answer", result.get(0).getAnswerText());
+    }
+
+    @Test
+    void multilineQuestion_bareHashLine_producesBlankLineInText() throws IOException {
+        String input = "#Q line1\n#\n#Q line2\nAnswer\n";
+        List<Question> result = parse(input);
+        assertEquals(1, result.size());
+        assertEquals("Q line1\n\nQ line2", result.get(0).getQuestionText());
+    }
+
+    @Test
+    void multilineQuestion_withCodeBlock_parsedCorrectly() throws IOException {
+        String input =
+            "#What is the output?\n" +
+            "#\n" +
+            "#```java\n" +
+            "#int x = 5;\n" +
+            "#```\n" +
+            "The output is 10.\n";
+        List<Question> result = parse(input);
+        assertEquals(1, result.size());
+        assertEquals("What is the output?\n\n```java\nint x = 5;\n```",
+                     result.get(0).getQuestionText());
+        assertEquals("The output is 10.", result.get(0).getAnswerText());
+    }
+
+    @Test
+    void multilineQuestion_followedByAnotherQuestion_bothParsed() throws IOException {
+        String input = "#Q1 line1\n#Q1 line2\nA1\n\n#Q2\nA2\n";
+        List<Question> result = parse(input);
+        assertEquals(2, result.size());
+        assertEquals("Q1 line1\nQ1 line2", result.get(0).getQuestionText());
+        assertEquals("A1", result.get(0).getAnswerText());
+        assertEquals("Q2", result.get(1).getQuestionText());
+        assertEquals("A2", result.get(1).getAnswerText());
+    }
+
+    @Test
+    void multilineQuestion_blankFileLinesIgnored_blockContinues() throws IOException {
+        String input = "#Q1 line1\n\n#Q1 line2\nAnswer\n";
+        List<Question> result = parse(input);
+        assertEquals(1, result.size());
+        assertEquals("Q1 line1\nQ1 line2", result.get(0).getQuestionText());
+    }
+
+    @Test
+    void multilineQuestion_commentBetweenHashLines_isSkipped() throws IOException {
+        String input = "#Q line1\n@comment\n#Q line2\nAnswer\n";
+        List<Question> result = parse(input);
+        assertEquals(1, result.size());
+        assertEquals("Q line1\nQ line2", result.get(0).getQuestionText());
     }
 }

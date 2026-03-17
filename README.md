@@ -53,10 +53,16 @@ Questions are imported from plain `.txt` files:
 Paris is the capital of France.
 It has been the capital since medieval times.
 
-#What is the chemical symbol for water?
-H2O — two hydrogen atoms bonded to one oxygen atom.
-
 @This line is a comment and will be ignored
+
+#What is the output of this program?
+#
+#```java
+#public static void main(String[] args) {
+#    System.out.println(2 + 3);
+#}
+#```
+The output is 5.
 
 #What does CPU stand for?
 Central Processing Unit.
@@ -64,10 +70,12 @@ It is the primary component that executes instructions in a computer.
 ```
 
 **Rules:**
-- A line starting with `#` begins a new question (the `#` is stripped from the text)
-- Lines below (until the next `#` line) are the official answer
+- A line starting with `#` begins or continues a question block (the `#` is stripped)
+- **Multiple consecutive `#` lines combine into a single multi-line question** — useful for code snippets
+- A bare `#` line (nothing after `#`) embeds a blank line within the question text
 - A line starting with `@` is a comment and is ignored
-- Blank lines are ignored and used as visual separators
+- Non-`#`, non-blank lines after a question block are the official answer
+- Blank file-lines are ignored in all states
 
 ---
 

@@ -19,6 +19,10 @@
             </button>
         </form>
         <a href="/admin" class="nav-link">Admin</a>
+        <span class="nav-link" style="color:#a0aec0" th:text="${#authentication.name}"></span>
+        <form th:action="@{/logout}" method="post" style="display:inline">
+            <button type="submit" class="nav-link" style="background:none;border:none;cursor:pointer;color:#a0aec0;padding:0">Sign out</button>
+        </form>
     </div>
 </nav>
 
@@ -53,7 +57,7 @@
     <!-- Question card -->
     <div class="card">
         <div class="question-label">Question</div>
-        <p class="question-text" th:text="${question.questionText}"></p>
+        <pre class="question-text" th:text="${question.questionText}"></pre>
 
         <!-- Draft textarea: editable before reveal, read-only after -->
         <div th:if="${!showAnswer}">

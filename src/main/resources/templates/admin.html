@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,6 +12,13 @@
 <nav class="navbar">
     <a href="/quiz" class="nav-link">Quiz</a>
     <a href="/admin" class="brand">Admin</a>
+    <div class="nav-right">
+        <a sec:authorize="hasRole('ADMIN')" href="/admin/users" class="nav-link">Users</a>
+        <span class="nav-link" style="color:#a0aec0" th:text="${#authentication.name}"></span>
+        <form th:action="@{/logout}" method="post" style="display:inline">
+            <button type="submit" class="nav-link" style="background:none;border:none;cursor:pointer;color:#a0aec0;padding:0">Sign out</button>
+        </form>
+    </div>
 </nav>
 
 <main class="container" style="max-width: 920px">
@@ -30,11 +38,13 @@
     <!-- Import section -->
     <div class="card">
         <h2>Import Questions</h2>
-        <p class="hint">
-            Upload a <code>.txt</code> file. Lines starting with <code>#</code> are questions;
-            the following lines are the official answer. Lines starting with <code>@</code> are
-            comments and are ignored. Blank lines separate questions.
-        </p>
+        <p class="hint">Upload a <code>.txt</code> file.</p>
+        <p class="hint">Lines starting with <code>#</code> form the question
+            — multiple consecutive <code>#</code> lines combine into one multi-line question.</p>
+        <p class="hint">A bare <code>#</code> line adds a blank line inside the question text.</p>
+        <p class="hint">Lines starting with <code>@</code> are comments and are ignored.</p>
+        <p class="hint">The following non-<code>#</code> lines are the official answer.</p>
+
         <form th:action="@{/admin/import}" method="post" enctype="multipart/form-data" class="import-form">
             <input type="file" name="file" accept=".txt" required class="file-input"/>
             <button type="submit" class="btn btn-primary">Import</button>

@@ -94,6 +94,8 @@ body {
     line-height: 1.55;
     color: #1a202c;
     margin-bottom: 1.25rem;
+    white-space: pre-wrap;
+    font-family: inherit;
 }
 .draft-area {
     width: 100%;
@@ -302,7 +304,13 @@ body {
 }
 .question-table tr:last-child td { border-bottom: none; }
 .col-num { width: 3rem; color: #a0aec0; text-align: center; }
-.col-question { max-width: 500px; line-height: 1.45; }
+.col-question {
+    max-width: 500px;
+    line-height: 1.45;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 .col-status { width: 90px; text-align: center; }
 
 .row-success { background: #f0fff4; }

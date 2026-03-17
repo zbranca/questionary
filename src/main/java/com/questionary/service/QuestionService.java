@@ -1,5 +1,6 @@
 package com.questionary.service;
 
+import com.questionary.entity.AppUser;
 import com.questionary.entity.Question;
 import com.questionary.entity.QuestionStatus;
 import com.questionary.repository.QuestionRepository;
@@ -22,62 +23,60 @@ public class QuestionService {
         this.importService = importService;
     }
 
-    public Optional<Question> findNextUnanswered() {
-        return repo.findFirstUnanswered(QuestionStatus.UNANSWERED);
+    public Optional<Question> findNextUnanswered(AppUser user) {
+        return repo.findFirstUnanswered(user, QuestionStatus.UNANSWERED);
     }
 
-    public Optional<Question> findNextUnansweredExcluding(Long id) {
-        return repo.findFirstUnansweredExcluding(QuestionStatus.UNANSWERED, id);
+    public Optional<Question> findNextUnansweredExcluding(Long id, AppUser user) {
+        return repo.findFirstUnansweredExcluding(user, QuestionStatus.UNANSWERED, id);
     }
 
-    public Optional<Question> findNextFailed() {
-        return repo.findFirstByStatusOrderBySortOrderAsc(QuestionStatus.FAILED);
+    public Optional<Question> findNextFailed(AppUser user) {
+        return repo.findFirstByStatusAndUser(user, QuestionStatus.FAILED);
     }
 
-    public Optional<Question> findNextFailedExcluding(Long id) {
-        return repo.findFirstByStatusAndIdNotOrderBySortOrderAsc(QuestionStatus.FAILED, id);
+    public Optional<Question> findNextFailedExcluding(Long id, AppUser user) {
+        return repo.findFirstByStatusAndIdNotAndUser(user, QuestionStatus.FAILED, id);
     }
 
-    public Optional<Question> findById(Long id) {
-        return repo.findById(id);
+    public Optional<Question> findById(Long id, AppUser user) {
+        return repo.findByIdAndUser(id, user);
     }
 
     @Transactional
-    public void markStatus(Long id, QuestionStatus status) {
-        repo.findById(id).ifPresent(q -> {
+    public void markStatus(Long id, QuestionStatus status, AppUser user) {
+        repo.findByIdAndUser(id, user).ifPresent(q -> {
             q.setStatus(status);
             repo.save(q);
         });
     }
 
     @Transactional
-    public int importFromFile(MultipartFile file) throws IOException {
-        long existingCount = repo.count();
+    public int importFromFile(MultipartFile file, AppUser user) throws IOException {
+        long existingCount = repo.countByUser(user);
         List<Question> parsed = importService.parse(file.getInputStream());
-        parsed.forEach(q -> q.setSortOrder((int) (existingCount + q.getSortOrder())));
+        parsed.forEach(q -> {
+            q.setSortOrder((int) (existingCount + q.getSortOrder()));
+            q.setUser(user);
+        });
         repo.saveAll(parsed);
         return parsed.size();
     }
 
-    /**
-     * Returns questions matching optional text search and status filter.
-     * Filtering is performed at the SQL level. Passing null/blank text or null status
-     * removes the respective filter.
-     */
-    public List<Question> findFiltered(String text, QuestionStatus statusFilter) {
+    public List<Question> findFiltered(String text, QuestionStatus statusFilter, AppUser user) {
         String pattern = (text != null && !text.isBlank()) ? "%" + text.toLowerCase() + "%" : null;
         if (statusFilter == null) {
-            return repo.findFilteredNoStatus(pattern);
+            return repo.findFilteredNoStatus(user, pattern);
         }
         if (statusFilter == QuestionStatus.UNANSWERED) {
-            return repo.findFilteredUnanswered(pattern, QuestionStatus.UNANSWERED);
+            return repo.findFilteredUnanswered(user, pattern, QuestionStatus.UNANSWERED);
         }
-        return repo.findFilteredByStatus(pattern, statusFilter);
+        return repo.findFilteredByStatus(user, pattern, statusFilter);
     }
 
     @Transactional
-    public void updateQuestion(Long id, String questionText, String answerText, QuestionStatus status) {
-        repo.findById(id).ifPresent(q -> {
+    public void updateQuestion(Long id, String questionText, String answerText, QuestionStatus status, AppUser user) {
+        repo.findByIdAndUser(id, user).ifPresent(q -> {
             q.setQuestionText(questionText);
             q.setAnswerText(answerText);
             q.setStatus(status);
@@ -86,24 +85,24 @@ public class QuestionService {
     }
 
     @Transactional
-    public void deleteById(Long id) {
-        repo.deleteById(id);
+    public void deleteById(Long id, AppUser user) {
+        repo.findByIdAndUser(id, user).ifPresent(q -> repo.deleteById(q.getId()));
     }
 
     @Transactional
-    public void deleteAll() {
-        repo.deleteAll();
+    public void deleteAll(AppUser user) {
+        repo.deleteAllByUser(user);
     }
 
     @Transactional
-    public void resetAllStatuses() {
-        List<Question> all = repo.findAll();
+    public void resetAllStatuses(AppUser user) {
+        List<Question> all = repo.findAllByUserOrderBySortOrderAsc(user);
         all.forEach(q -> q.setStatus(QuestionStatus.UNANSWERED));
         repo.saveAll(all);
     }
 
-    public long countTotal()      { return repo.count(); }
-    public long countUnanswered() { return repo.countUnanswered(QuestionStatus.UNANSWERED); }
-    public long countSuccess()    { return repo.countByStatus(QuestionStatus.SUCCESS); }
-    public long countFailed()     { return repo.countByStatus(QuestionStatus.FAILED); }
+    public long countTotal(AppUser user)      { return repo.countByUser(user); }
+    public long countUnanswered(AppUser user) { return repo.countUnanswered(user, QuestionStatus.UNANSWERED); }
+    public long countSuccess(AppUser user)    { return repo.countByStatusAndUser(user, QuestionStatus.SUCCESS); }
+    public long countFailed(AppUser user)     { return repo.countByStatusAndUser(user, QuestionStatus.FAILED); }
 }

@@ -23,6 +23,10 @@ public class Question {
     @Column(nullable = false)
     private int sortOrder;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = true)
+    private AppUser user;
+
     public Question() {}
 
     public Question(String questionText, String answerText, int sortOrder) {
@@ -44,4 +48,7 @@ public class Question {
 
     public int getSortOrder() { return sortOrder; }
     public void setSortOrder(int sortOrder) { this.sortOrder = sortOrder; }
+
+    public AppUser getUser() { return user; }
+    public void setUser(AppUser user) { this.user = user; }
 }

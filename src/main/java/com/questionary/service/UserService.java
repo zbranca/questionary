@@ -1,0 +1,52 @@
+package com.questionary.service;
+
+import com.questionary.entity.AppUser;
+import com.questionary.repository.AppUserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class UserService {
+
+    private final AppUserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    public UserService(AppUserRepository userRepository, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    public List<AppUser> findAll() {
+        return userRepository.findAll();
+    }
+
+    public Optional<AppUser> findById(Long id) {
+        return userRepository.findById(id);
+    }
+
+    public boolean existsByUsername(String username) {
+        return userRepository.existsByUsername(username);
+    }
+
+    @Transactional
+    public void createUser(String username, String rawPassword, String role) {
+        AppUser user = new AppUser();
+        user.setUsername(username);
+        user.setPassword(passwordEncoder.encode(rawPassword));
+        user.setRole(role);
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void deleteUser(Long id) {
+        userRepository.deleteById(id);
+    }
+
+    public long countAdmins() {
+        return userRepository.countByRole("ADMIN");
+    }
+}

@@ -18,7 +18,12 @@ public class ImportService {
      *
      * Format:
      * <pre>
-     *   #Question text
+     *   #Question line 1
+     *   #Question line 2 (consecutive # lines form one multi-line question)
+     *   #
+     *   #```java
+     *   #int x = 5;
+     *   #```
      *   Answer line 1
      *   Answer line 2
      *
@@ -30,16 +35,20 @@ public class ImportService {
      *
      * Rules:
      * <ul>
-     *   <li>Lines starting with {@code #} begin a new question block (the {@code #} is stripped).</li>
+     *   <li>Lines starting with {@code #} begin or continue a question block (the {@code #} is stripped).</li>
+     *   <li>Multiple consecutive {@code #} lines combine into a single multi-line question text.</li>
+     *   <li>A bare {@code #} line (nothing after {@code #}) embeds a blank line within the question text.</li>
      *   <li>Lines starting with {@code @} are comment lines and are skipped.</li>
-     *   <li>Non-blank lines below a {@code #} line accumulate as the answer.</li>
-     *   <li>Blank lines are ignored; only a new {@code #} line closes a block.</li>
+     *   <li>Non-blank, non-{@code #} lines after a question block accumulate as the answer.</li>
+     *   <li>Blank file-lines are ignored in all states; a new {@code #} line after answer lines starts a new block.</li>
      * </ul>
      */
     public List<Question> parse(InputStream inputStream) throws IOException {
         List<Question> questions = new ArrayList<>();
+        List<String> questionLines = new ArrayList<>();
         List<String> answerLines = new ArrayList<>();
-        String currentQuestion = null;
+        boolean hasActiveBlock = false;
+        boolean inQuestion = false;
         int order = 0;
 
         try (BufferedReader reader = new BufferedReader(
@@ -49,30 +58,43 @@ public class ImportService {
             while ((line = reader.readLine()) != null) {
                 String trimLine = line.strip();
 
-                if (!trimLine.startsWith("@")) {
-                    if (trimLine.startsWith("#")) {
-                        if (currentQuestion != null) {
-                            questions.add(build(currentQuestion, answerLines, order++));
-                            answerLines.clear();
-                        }
-                        currentQuestion = trimLine.substring(1).trim();
-                    } else if (!trimLine.isBlank()) {
-                        answerLines.add(line);
+                if (trimLine.startsWith("@")) {
+                    continue; // comment line — skip
+                }
+
+                if (trimLine.startsWith("#")) {
+                    if (hasActiveBlock && !inQuestion) {
+                        // answer phase complete — flush and start new block
+                        questions.add(build(questionLines, answerLines, order++));
+                        questionLines.clear();
+                        answerLines.clear();
+                    }
+                    hasActiveBlock = true;
+                    inQuestion = true;
+                    questionLines.add(trimLine.substring(1).strip());
+                } else if (!trimLine.isBlank()) {
+                    if (hasActiveBlock && inQuestion) {
+                        inQuestion = false; // first answer line ends question accumulation
+                    }
+                    if (hasActiveBlock) {
+                        answerLines.add(line); // preserve original indentation
                     }
                 }
+                // blank lines are ignored in all states
             }
 
             // Flush last block
-            if (currentQuestion != null) {
-                questions.add(build(currentQuestion, answerLines, order));
+            if (hasActiveBlock) {
+                questions.add(build(questionLines, answerLines, order));
             }
         }
 
         return questions;
     }
 
-    private Question build(String questionText, List<String> answerLines, int order) {
-        String answer = String.join("\n", answerLines);
-        return new Question(questionText, answer, order);
+    private Question build(List<String> questionLines, List<String> answerLines, int order) {
+        String questionText = String.join("\n", questionLines);
+        String answerText = String.join("\n", answerLines);
+        return new Question(questionText, answerText, order);
     }
 }
