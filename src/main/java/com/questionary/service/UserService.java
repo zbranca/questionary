@@ -42,6 +42,17 @@ public class UserService {
     }
 
     @Transactional
+    public void updateUser(Long id, String newUsername, String rawPassword, String role) {
+        AppUser user = userRepository.findById(id).orElseThrow();
+        user.setUsername(newUsername);
+        if (rawPassword != null && !rawPassword.isBlank()) {
+            user.setPassword(passwordEncoder.encode(rawPassword));
+        }
+        user.setRole(role);
+        userRepository.save(user);
+    }
+
+    @Transactional
     public void deleteUser(Long id) {
         userRepository.deleteById(id);
     }

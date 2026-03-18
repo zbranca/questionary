@@ -17,19 +17,19 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     List<Question> findAllByUserOrderBySortOrderAsc(@Param("user") AppUser user);
 
     @Query("SELECT q FROM Question q WHERE q.user = :user AND (q.status IS NULL OR q.status = :unanswered) ORDER BY q.sortOrder ASC")
-    Optional<Question> findFirstUnanswered(@Param("user") AppUser user, @Param("unanswered") QuestionStatus unanswered);
+    List<Question> findFirstUnanswered(@Param("user") AppUser user, @Param("unanswered") QuestionStatus unanswered);
 
     @Query("SELECT q FROM Question q WHERE q.user = :user AND (q.status IS NULL OR q.status = :unanswered) AND q.id <> :id ORDER BY q.sortOrder ASC")
-    Optional<Question> findFirstUnansweredExcluding(@Param("user") AppUser user, @Param("unanswered") QuestionStatus unanswered, @Param("id") Long id);
+    List<Question> findFirstUnansweredExcluding(@Param("user") AppUser user, @Param("unanswered") QuestionStatus unanswered, @Param("id") Long id);
 
     @Query("SELECT COUNT(q) FROM Question q WHERE q.user = :user AND (q.status IS NULL OR q.status = :unanswered)")
     long countUnanswered(@Param("user") AppUser user, @Param("unanswered") QuestionStatus unanswered);
 
     @Query("SELECT q FROM Question q WHERE q.user = :user AND q.status = :status ORDER BY q.sortOrder ASC")
-    Optional<Question> findFirstByStatusAndUser(@Param("user") AppUser user, @Param("status") QuestionStatus status);
+    List<Question> findFirstByStatusAndUser(@Param("user") AppUser user, @Param("status") QuestionStatus status);
 
     @Query("SELECT q FROM Question q WHERE q.user = :user AND q.status = :status AND q.id <> :id ORDER BY q.sortOrder ASC")
-    Optional<Question> findFirstByStatusAndIdNotAndUser(@Param("user") AppUser user, @Param("status") QuestionStatus status, @Param("id") Long id);
+    List<Question> findFirstByStatusAndIdNotAndUser(@Param("user") AppUser user, @Param("status") QuestionStatus status, @Param("id") Long id);
 
     @Query("SELECT COUNT(q) FROM Question q WHERE q.user = :user AND q.status = :status")
     long countByStatusAndUser(@Param("user") AppUser user, @Param("status") QuestionStatus status);

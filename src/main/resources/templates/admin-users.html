@@ -27,32 +27,14 @@
     <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
     <div th:if="${errorMessage}"   class="alert alert-error"   th:text="${errorMessage}"></div>
 
-    <!-- Create user -->
-    <div class="card">
-        <h2>Create User</h2>
-        <form th:action="@{/admin/users/create}" method="post">
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input id="username" type="text" name="username" class="form-control" required>
-            </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input id="password" type="password" name="password" class="form-control" required>
-            </div>
-            <div class="form-group">
-                <label for="role">Role</label>
-                <select id="role" name="role" class="form-control">
-                    <option value="USER">User</option>
-                    <option value="ADMIN">Admin</option>
-                </select>
-            </div>
-            <button type="submit" class="btn btn-primary">Create</button>
-        </form>
-    </div>
-
     <!-- User list -->
     <div class="card">
-        <h2>Users (<span th:text="${#lists.size(users)}"></span>)</h2>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+            <h2 style="margin-bottom:0">Users (<span th:text="${#lists.size(users)}"></span>)</h2>
+            <button class="btn btn-primary" style="font-size:0.9rem;padding:0.4rem 1rem"
+                    onclick="openCreateModal()">+ Create User</button>
+        </div>
+
         <table class="question-table" th:if="${!#lists.isEmpty(users)}">
             <thead>
                 <tr>
@@ -68,10 +50,16 @@
                         <span th:if="${u.role == 'ADMIN'}" class="badge badge-failed">ADMIN</span>
                         <span th:if="${u.role == 'USER'}"  class="badge badge-unanswered">USER</span>
                     </td>
-                    <td>
+                    <td style="white-space:nowrap">
+                        <button class="btn-icon"
+                                th:data-id="${u.id}"
+                                th:data-username="${u.username}"
+                                th:data-role="${u.role}"
+                                onclick="openEditModal(this)"
+                                title="Edit user">&#9998;</button>
                         <form th:action="@{/admin/users/{id}/delete(id=${u.id})}" method="post" style="display:inline"
                               th:if="${u.username != #authentication.name}">
-                            <button type="submit" class="btn btn-danger"
+                            <button type="submit" class="btn btn-danger" style="padding:0.3rem 0.65rem;font-size:0.85rem"
                                     onclick="return confirm('Delete user and all their questions?')">Delete</button>
                         </form>
                         <span th:if="${u.username == #authentication.name}" style="color:#a0aec0;font-size:0.85rem">(you)</span>
@@ -85,5 +73,81 @@
     </div>
 
 </main>
+
+<!-- Create / Edit User Modal -->
+<div class="modal-overlay" id="userModal" onclick="handleOverlayClick(event)">
+    <div class="modal">
+        <h3 id="modalTitle">Create User</h3>
+        <form th:action="@{/admin/users/save}" method="post" id="userForm">
+            <input type="hidden" name="id" id="modalUserId">
+            <div class="form-group">
+                <label for="modalUsername">Username</label>
+                <input id="modalUsername" type="text" name="username" class="form-control" required autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label for="modalPassword">Password</label>
+                <input id="modalPassword" type="password" name="password" class="form-control" autocomplete="new-password">
+                <p id="passwordHint" style="font-size:0.82rem;color:#718096;margin-top:0.3rem;display:none">
+                    Leave blank to keep the current password.
+                </p>
+            </div>
+            <div class="form-group">
+                <label for="modalRole">Role</label>
+                <select id="modalRole" name="role" class="form-control">
+                    <option value="USER">User</option>
+                    <option value="ADMIN">Admin</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>
+                <div class="spacer"></div>
+                <button type="submit" class="btn btn-primary" id="modalSubmitBtn">Create</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openCreateModal() {
+        document.getElementById('modalTitle').textContent = 'Create User';
+        document.getElementById('modalSubmitBtn').textContent = 'Create';
+        document.getElementById('modalUserId').value = '';
+        document.getElementById('modalUsername').value = '';
+        document.getElementById('modalPassword').value = '';
+        document.getElementById('modalPassword').required = true;
+        document.getElementById('modalRole').value = 'USER';
+        document.getElementById('passwordHint').style.display = 'none';
+        document.getElementById('userModal').classList.add('active');
+        document.getElementById('modalUsername').focus();
+    }
+
+    function openEditModal(btn) {
+        document.getElementById('modalTitle').textContent = 'Edit User';
+        document.getElementById('modalSubmitBtn').textContent = 'Update';
+        document.getElementById('modalUserId').value = btn.dataset.id;
+        document.getElementById('modalUsername').value = btn.dataset.username;
+        document.getElementById('modalPassword').value = '';
+        document.getElementById('modalPassword').required = false;
+        document.getElementById('modalRole').value = btn.dataset.role;
+        document.getElementById('passwordHint').style.display = 'block';
+        document.getElementById('userModal').classList.add('active');
+        document.getElementById('modalUsername').focus();
+    }
+
+    function closeModal() {
+        document.getElementById('userModal').classList.remove('active');
+    }
+
+    function handleOverlayClick(event) {
+        if (event.target === document.getElementById('userModal')) {
+            closeModal();
+        }
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeModal();
+    });
+</script>
+
 </body>
 </html>

@@ -24,19 +24,19 @@ public class QuestionService {
     }
 
     public Optional<Question> findNextUnanswered(AppUser user) {
-        return repo.findFirstUnanswered(user, QuestionStatus.UNANSWERED);
+        return repo.findFirstUnanswered(user, QuestionStatus.UNANSWERED).stream().findFirst();
     }
 
     public Optional<Question> findNextUnansweredExcluding(Long id, AppUser user) {
-        return repo.findFirstUnansweredExcluding(user, QuestionStatus.UNANSWERED, id);
+        return repo.findFirstUnansweredExcluding(user, QuestionStatus.UNANSWERED, id).stream().findFirst();
     }
 
     public Optional<Question> findNextFailed(AppUser user) {
-        return repo.findFirstByStatusAndUser(user, QuestionStatus.FAILED);
+        return repo.findFirstByStatusAndUser(user, QuestionStatus.FAILED).stream().findFirst();
     }
 
     public Optional<Question> findNextFailedExcluding(Long id, AppUser user) {
-        return repo.findFirstByStatusAndIdNotAndUser(user, QuestionStatus.FAILED, id);
+        return repo.findFirstByStatusAndIdNotAndUser(user, QuestionStatus.FAILED, id).stream().findFirst();
     }
 
     public Optional<Question> findById(Long id, AppUser user) {
