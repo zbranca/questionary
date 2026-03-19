@@ -75,6 +75,17 @@ public class QuestionService {
     }
 
     @Transactional
+    public void createQuestion(String questionText, String answerText, QuestionStatus status, AppUser user) {
+        Question q = new Question();
+        q.setQuestionText(questionText);
+        q.setAnswerText(answerText);
+        q.setStatus(status);
+        q.setSortOrder((int) repo.countByUser(user) + 1);
+        q.setUser(user);
+        repo.save(q);
+    }
+
+    @Transactional
     public void updateQuestion(Long id, String questionText, String answerText, QuestionStatus status, AppUser user) {
         repo.findByIdAndUser(id, user).ifPresent(q -> {
             q.setQuestionText(questionText);

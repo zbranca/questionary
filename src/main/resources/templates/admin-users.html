@@ -14,18 +14,26 @@
     <a href="/admin" class="nav-link">Admin</a>
     <a href="/admin/users" class="brand">Users</a>
     <div class="nav-right">
-        <span class="nav-link" style="color:#a0aec0" th:text="${#authentication.name}"></span>
-        <form th:action="@{/logout}" method="post" style="display:inline">
-            <button type="submit" class="nav-link" style="background:none;border:none;cursor:pointer;color:#a0aec0;padding:0">Sign out</button>
-        </form>
+        <div class="nav-user">
+            <span class="nav-link" style="color:#a0aec0" th:text="${#authentication.name}"></span>
+            <form th:action="@{/logout}" method="post" style="display:inline">
+                <button type="submit" class="nav-link" style="background:none;border:none;cursor:pointer;color:#a0aec0;padding:0">Sign out</button>
+            </form>
+        </div>
     </div>
 </nav>
 
 <main class="container" style="max-width: 700px">
 
-    <!-- Flash messages -->
-    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
-    <div th:if="${errorMessage}"   class="alert alert-error"   th:text="${errorMessage}"></div>
+    <!-- Flash messages (toast) -->
+    <div th:if="${successMessage}" class="alert alert-success toast" id="flashToast">
+        <span th:text="${successMessage}"></span>
+        <button class="toast-dismiss" onclick="dismissToast()" title="Dismiss">&times;</button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-error toast" id="flashToast">
+        <span th:text="${errorMessage}"></span>
+        <button class="toast-dismiss" onclick="dismissToast()" title="Dismiss">&times;</button>
+    </div>
 
     <!-- User list -->
     <div class="card">
@@ -147,6 +155,20 @@
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') closeModal();
     });
+
+    (function() {
+        var t = document.getElementById('flashToast');
+        if (t) {
+            setTimeout(function() {
+                t.classList.add('toast-hide');
+                setTimeout(function() { t.style.display = 'none'; }, 300);
+            }, 4000);
+        }
+    })();
+    function dismissToast() {
+        var t = document.getElementById('flashToast');
+        if (t) { t.classList.add('toast-hide'); setTimeout(function() { t.style.display='none'; }, 300); }
+    }
 </script>
 
 </body>

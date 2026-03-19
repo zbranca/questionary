@@ -97,6 +97,28 @@ public class AdminController {
         return REDIRECT_ADMIN;
     }
 
+    @PostMapping("/question/create")
+    public String createQuestion(
+            @RequestParam String questionText,
+            @RequestParam String answerText,
+            @RequestParam QuestionStatus status,
+            @RequestParam(required = false, defaultValue = "") String q,
+            @RequestParam(required = false, defaultValue = "") String statusFilter,
+            RedirectAttributes redirectAttrs,
+            @AuthenticationPrincipal AppUserDetails principal) {
+
+        AppUser user = principal.getUser();
+        if (questionText.isBlank() || answerText.isBlank()) {
+            redirectAttrs.addFlashAttribute(ERROR_MESSAGE, "Question and answer cannot be blank.");
+        } else {
+            questionService.createQuestion(questionText, answerText, status, user);
+            redirectAttrs.addFlashAttribute(SUCCESS_MESSAGE, "Question created.");
+        }
+        if (!q.isBlank()) redirectAttrs.addAttribute("q", q);
+        if (!statusFilter.isBlank()) redirectAttrs.addAttribute("statusFilter", statusFilter);
+        return REDIRECT_ADMIN;
+    }
+
     @PostMapping("/question/{id}/update")
     public String updateQuestion(
             @PathVariable Long id,

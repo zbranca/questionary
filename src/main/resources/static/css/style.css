@@ -238,14 +238,53 @@ body {
 .stat-label { font-size: 0.8rem; color: #718096; margin-top: 0.2rem; }
 .done-actions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
 
-/* ===== Admin ===== */
+/* ===== Alerts & Toast Notifications ===== */
 .alert {
     padding: 0.85rem 1rem;
-    border-radius: 6px;
+    border-radius: 8px;
     font-size: 0.95rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
 }
 .alert-success { background: #f0fff4; color: #276749; border: 1px solid #c6f6d5; }
 .alert-error   { background: #fff5f5; color: #9b2c2c; border: 1px solid #fed7d7; }
+
+/* Applied alongside .alert to make it a slide-in fixed toast */
+.toast {
+    position: fixed;
+    top: 1.25rem;
+    right: 1.25rem;
+    z-index: 2000;
+    min-width: 280px;
+    max-width: 420px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.15);
+    animation: slideInRight 0.3s ease;
+}
+.toast-dismiss {
+    margin-left: auto;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: inherit;
+    opacity: 0.6;
+    font-size: 1rem;
+    padding: 0;
+    line-height: 1;
+    flex-shrink: 0;
+}
+.toast-dismiss:hover { opacity: 1; }
+@keyframes slideInRight {
+    from { transform: translateX(110%); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+}
+.toast-hide {
+    animation: slideOutRight 0.3s ease forwards;
+}
+@keyframes slideOutRight {
+    from { transform: translateX(0);    opacity: 1; }
+    to   { transform: translateX(110%); opacity: 0; }
+}
 
 .card h2 {
     font-size: 1.15rem;
@@ -271,10 +310,51 @@ body {
     align-items: center;
     flex-wrap: wrap;
 }
-.file-input {
-    font-size: 0.92rem;
-    color: #4a5568;
+.file-input { display: none; }
+.file-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    white-space: nowrap;
 }
+.file-name {
+    font-size: 0.88rem;
+    color: #718096;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+}
+
+/* ===== Format Tooltip ===== */
+.card-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+.card-header-row h2 { margin-bottom: 0; }
+.format-tooltip-wrap { position: relative; }
+.format-tooltip {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem 1.1rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,.13);
+    z-index: 50;
+    min-width: 320px;
+    max-width: 420px;
+    font-size: 0.88rem;
+    color: #4a5568;
+    line-height: 1.6;
+}
+.format-tooltip.active { display: block; }
+.format-tooltip p { margin: 0.25rem 0; }
 
 .danger-zone { border-top: 3px solid #feb2b2; }
 .danger-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
@@ -433,6 +513,7 @@ textarea.form-control { min-height: 90px; resize: vertical; }
 
 /* ===== Quiz Navbar Mode Toggle ===== */
 .nav-right { display: flex; align-items: center; gap: 1rem; }
+.nav-user  { display: flex; align-items: center; gap: 1rem; border-left: 1px solid #4a5568; padding-left: 1rem; }
 .nav-mode-btn {
     background: transparent;
     border: 1px solid #4a5568;

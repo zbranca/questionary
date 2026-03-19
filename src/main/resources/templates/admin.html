@@ -14,18 +14,26 @@
     <a href="/admin" class="brand">Admin</a>
     <div class="nav-right">
         <a sec:authorize="hasRole('ADMIN')" href="/admin/users" class="nav-link">Users</a>
-        <span class="nav-link" style="color:#a0aec0" th:text="${#authentication.name}"></span>
-        <form th:action="@{/logout}" method="post" style="display:inline">
-            <button type="submit" class="nav-link" style="background:none;border:none;cursor:pointer;color:#a0aec0;padding:0">Sign out</button>
-        </form>
+        <div class="nav-user">
+            <span class="nav-link" style="color:#a0aec0" th:text="${#authentication.name}"></span>
+            <form th:action="@{/logout}" method="post" style="display:inline">
+                <button type="submit" class="nav-link" style="background:none;border:none;cursor:pointer;color:#a0aec0;padding:0">Sign out</button>
+            </form>
+        </div>
     </div>
 </nav>
 
 <main class="container" style="max-width: 920px">
 
-    <!-- Flash messages -->
-    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
-    <div th:if="${errorMessage}"   class="alert alert-error"   th:text="${errorMessage}"></div>
+    <!-- Flash messages (toast) -->
+    <div th:if="${successMessage}" class="alert alert-success toast" id="flashToast">
+        <span th:text="${successMessage}"></span>
+        <button class="toast-dismiss" onclick="dismissToast()" title="Dismiss">&times;</button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-error toast" id="flashToast">
+        <span th:text="${errorMessage}"></span>
+        <button class="toast-dismiss" onclick="dismissToast()" title="Dismiss">&times;</button>
+    </div>
 
     <!-- Stats -->
     <div class="stats">
@@ -37,16 +45,30 @@
 
     <!-- Import section -->
     <div class="card">
-        <h2>Import Questions</h2>
-        <p class="hint">Upload a <code>.txt</code> file.</p>
-        <p class="hint">Lines starting with <code>#</code> form the question
-            — multiple consecutive <code>#</code> lines combine into one multi-line question.</p>
-        <p class="hint">A bare <code>#</code> line adds a blank line inside the question text.</p>
-        <p class="hint">Lines starting with <code>@</code> are comments and are ignored.</p>
-        <p class="hint">The following non-<code>#</code> lines are the official answer.</p>
+        <div class="card-header-row">
+            <h2>Import Questions</h2>
+            <div class="format-tooltip-wrap">
+                <button type="button" class="btn btn-outline" style="font-size:0.85rem;padding:0.3rem 0.8rem"
+                        id="formatBtn" onclick="toggleFormatTooltip()">File format</button>
+                <div class="format-tooltip" id="formatTooltip">
+                    <p>Upload a <code>.txt</code> file with the following format:</p>
+                    <p style="margin-top:0.6rem"><code>#</code> lines form the question (the <code>#</code> is stripped).</p>
+                    <p>Multiple consecutive <code>#</code> lines combine into one multi-line question.</p>
+                    <p>A bare <code>#</code> line (nothing after it) embeds a blank line in the question.</p>
+                    <p style="margin-top:0.4rem">Non-<code>#</code>, non-blank lines after a question block are the answer.</p>
+                    <p style="margin-top:0.4rem"><code>@</code> lines are comments and are ignored.</p>
+                    <p style="margin-top:0.6rem;color:#718096;font-style:italic">Example:<br>
+                        <code>#What is Java?<br>A compiled and interpreted language.<br><br>#Next question<br>Its answer here</code>
+                    </p>
+                </div>
+            </div>
+        </div>
 
         <form th:action="@{/admin/import}" method="post" enctype="multipart/form-data" class="import-form">
-            <input type="file" name="file" accept=".txt" required class="file-input"/>
+            <label for="fileInput" class="btn btn-outline file-label">&#128193; Choose file</label>
+            <input type="file" id="fileInput" name="file" accept=".txt" required class="file-input"
+                   onchange="updateFileName(this)"/>
+            <span class="file-name" id="fileName">No file chosen</span>
             <button type="submit" class="btn btn-primary">Import</button>
         </form>
     </div>
@@ -77,11 +99,17 @@
 
     <!-- Question list -->
     <div th:if="${#lists.isEmpty(questions) and filterText == '' and filterStatus == null}" class="card empty-state">
-        <p>No questions in database. Upload a .txt file to get started.</p>
+        <p>No questions in database. Upload a .txt file or
+            <button type="button" class="btn btn-outline" style="font-size:0.88rem;padding:0.25rem 0.7rem"
+                    onclick="openCreateModal()">create one manually</button>.
+        </p>
     </div>
 
     <div th:if="${!#lists.isEmpty(questions) or filterText != '' or filterStatus != null}" class="card">
-        <h2>Questions (<span th:text="${totalCount}"></span>)</h2>
+        <div class="card-header-row">
+            <h2>Questions (<span th:text="${totalCount}"></span>)</h2>
+            <button class="btn-icon" title="Create question" onclick="openCreateModal()" style="font-size:1.1rem">&#43;</button>
+        </div>
 
         <!-- Filter form -->
         <form class="filter-form" th:action="@{/admin}" method="get">
@@ -149,6 +177,7 @@
         <h3 id="editModalTitle">Edit Question</h3>
 
         <form id="editForm" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
             <input type="hidden" id="editQ" name="q" />
             <input type="hidden" id="editStatusFilter" name="statusFilter" />
             <div class="form-group">
@@ -177,6 +206,7 @@
         </form>
 
         <form id="deleteForm" method="post" style="display:none">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
             <input type="hidden" id="deleteQ" name="q" />
             <input type="hidden" id="deleteStatusFilter" name="statusFilter" />
         </form>
@@ -184,6 +214,19 @@
 </div>
 
 <script>
+    (function() {
+        var t = document.getElementById('flashToast');
+        if (t) {
+            setTimeout(function() {
+                t.classList.add('toast-hide');
+                setTimeout(function() { t.style.display = 'none'; }, 300);
+            }, 4000);
+        }
+    })();
+    function dismissToast() {
+        var t = document.getElementById('flashToast');
+        if (t) { t.classList.add('toast-hide'); setTimeout(function() { t.style.display='none'; }, 300); }
+    }
     function openEditModal(btn) {
         const id = btn.dataset.id;
         const params = new URLSearchParams(window.location.search);
@@ -197,7 +240,22 @@
         document.getElementById('editStatusFilter').value = params.get('statusFilter') || '';
         document.getElementById('deleteQ').value = params.get('q') || '';
         document.getElementById('deleteStatusFilter').value = params.get('statusFilter') || '';
+        document.getElementById('deleteBtn').style.display = '';
         document.getElementById('editModal').classList.add('active');
+    }
+
+    function openCreateModal() {
+        const params = new URLSearchParams(window.location.search);
+        document.getElementById('editModalTitle').textContent = 'Create Question';
+        document.getElementById('editQuestionText').value = '';
+        document.getElementById('editAnswerText').value = '';
+        document.getElementById('editStatus').value = 'UNANSWERED';
+        document.getElementById('editForm').action = '/admin/question/create';
+        document.getElementById('editQ').value = params.get('q') || '';
+        document.getElementById('editStatusFilter').value = params.get('statusFilter') || '';
+        document.getElementById('deleteBtn').style.display = 'none';
+        document.getElementById('editModal').classList.add('active');
+        document.getElementById('editQuestionText').focus();
     }
 
     function closeEditModal() {
@@ -210,9 +268,22 @@
         }
     }
 
-    document.getElementById('editModal').addEventListener('click', function(e) {
-        if (e.target === this) closeEditModal();
+    function updateFileName(input) {
+        document.getElementById('fileName').textContent =
+            input.files.length > 0 ? input.files[0].name : 'No file chosen';
+    }
+
+    function toggleFormatTooltip() {
+        document.getElementById('formatTooltip').classList.toggle('active');
+    }
+    document.addEventListener('click', function(e) {
+        var btn = document.getElementById('formatBtn');
+        var tip = document.getElementById('formatTooltip');
+        if (btn && tip && !btn.contains(e.target) && !tip.contains(e.target)) {
+            tip.classList.remove('active');
+        }
     });
+
 </script>
 
 </body>

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error — Questionary</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="/quiz" class="brand">Questionary</a>
+</nav>
+
+<main class="container">
+    <div class="card" style="text-align:center;padding:3rem 2rem">
+        <div style="font-size:3rem;margin-bottom:1rem;color:#fc8181">&#9888;</div>
+        <h2 style="color:#2d3748;margin-bottom:0.75rem" th:text="${errorTitle}">Error</h2>
+        <p style="color:#718096;margin-bottom:2rem" th:text="${errorMessage}"></p>
+        <a href="/quiz" class="btn btn-primary" style="display:inline-block;text-decoration:none">Go to Quiz</a>
+        <a href="javascript:history.back()" class="btn btn-outline" style="display:inline-block;margin-left:0.75rem;text-decoration:none">Go Back</a>
+    </div>
+</main>
+
+</body>
+</html>
