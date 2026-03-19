@@ -5,6 +5,8 @@ import com.questionary.entity.QuestionStatus;
 import com.questionary.security.AppUserDetails;
 import com.questionary.service.QuestionService;
 import jakarta.servlet.http.HttpSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -15,6 +17,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @Controller
 @RequestMapping("/admin")
 public class AdminController {
+
+    private static final Logger log = LoggerFactory.getLogger(AdminController.class);
 
     public static final String REDIRECT_ADMIN = "redirect:/admin";
     public static final String SUCCESS_MESSAGE = "successMessage";
@@ -67,6 +71,7 @@ public class AdminController {
         if (turningOn) {
             session.setAttribute(FAILED_MODE_INITIAL, questionService.countFailed(user));
         }
+        log.info("User '{}' toggled failed-only mode: {}", user.getUsername(), turningOn ? "ON" : "OFF");
         return REDIRECT_ADMIN;
     }
 
@@ -78,10 +83,12 @@ public class AdminController {
 
         AppUser user = principal.getUser();
         if (file.isEmpty()) {
+            log.warn("User '{}' submitted an empty file for import", user.getUsername());
             redirectAttrs.addFlashAttribute(ERROR_MESSAGE, "Please select a file.");
         } else {
             String originalName = file.getOriginalFilename();
             if (originalName == null || !originalName.toLowerCase().endsWith(".txt")) {
+                log.warn("User '{}' submitted invalid file type: '{}'", user.getUsername(), originalName);
                 redirectAttrs.addFlashAttribute(ERROR_MESSAGE, "Only .txt files are accepted.");
             } else {
                 try {
@@ -89,6 +96,7 @@ public class AdminController {
                     redirectAttrs.addFlashAttribute(SUCCESS_MESSAGE,
                             "Imported " + count + " question(s) successfully.");
                 } catch (Exception e) {
+                    log.error("Import failed for user '{}', file '{}': {}", user.getUsername(), originalName, e.getMessage(), e);
                     redirectAttrs.addFlashAttribute(ERROR_MESSAGE,
                             "Import failed: " + e.getMessage());
                 }
@@ -165,7 +173,9 @@ public class AdminController {
     @PostMapping("/delete-all")
     public String deleteAll(RedirectAttributes redirectAttrs,
                             @AuthenticationPrincipal AppUserDetails principal) {
-        questionService.deleteAll(principal.getUser());
+        AppUser user = principal.getUser();
+        log.warn("User '{}' requested DELETE ALL questions", user.getUsername());
+        questionService.deleteAll(user);
         redirectAttrs.addFlashAttribute(SUCCESS_MESSAGE, "All questions deleted.");
         return REDIRECT_ADMIN;
     }
@@ -173,7 +183,9 @@ public class AdminController {
     @PostMapping("/reset-statuses")
     public String resetStatuses(RedirectAttributes redirectAttrs,
                                 @AuthenticationPrincipal AppUserDetails principal) {
-        questionService.resetAllStatuses(principal.getUser());
+        AppUser user = principal.getUser();
+        log.info("User '{}' requested reset all statuses", user.getUsername());
+        questionService.resetAllStatuses(user);
         redirectAttrs.addFlashAttribute(SUCCESS_MESSAGE, "All statuses reset to unanswered.");
         return REDIRECT_ADMIN;
     }

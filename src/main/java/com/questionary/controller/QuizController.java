@@ -6,6 +6,8 @@ import com.questionary.entity.QuestionStatus;
 import com.questionary.security.AppUserDetails;
 import com.questionary.service.QuestionService;
 import jakarta.servlet.http.HttpSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -16,6 +18,8 @@ import java.util.Optional;
 @Controller
 @RequestMapping("/quiz")
 public class QuizController {
+
+    private static final Logger log = LoggerFactory.getLogger(QuizController.class);
 
     public static final String REDIRECT_QUIZ = "redirect:/quiz/";
     public static final String REDIRECT_QUIZ_DONE = "redirect:/quiz/done";
@@ -64,6 +68,7 @@ public class QuizController {
         if (turningOn) {
             session.setAttribute(AdminController.FAILED_MODE_INITIAL, questionService.countFailed(user));
         }
+        log.info("User '{}' toggled failed-only mode in quiz: {}", user.getUsername(), turningOn ? "ON" : "OFF");
         return REDIRECT_QUIZ_NO_SLASH;
     }
 
@@ -156,6 +161,7 @@ public class QuizController {
             @AuthenticationPrincipal AppUserDetails principal) {
 
         AppUser user = principal.getUser();
+        log.info("User '{}' marking question id={} as {}", user.getUsername(), id, status);
         questionService.markStatus(id, status, user);
         if (isFailedMode(session)) {
             return questionService.findNextFailed(user)
