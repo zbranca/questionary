@@ -76,7 +76,8 @@ class QuizControllerTest {
 
     @Test
     void mark_persistsStatusAndRedirectsToNextUnanswered() throws Exception {
-        when(questionService.findNextUnanswered(any())).thenReturn(Optional.of(questionWithId(5L)));
+        when(questionService.findById(eq(1L), any())).thenReturn(Optional.of(questionWithId(1L)));
+        when(questionService.findNextUnansweredAfter(anyInt(), any())).thenReturn(Optional.of(questionWithId(5L)));
 
         mockMvc.perform(post("/quiz/1/mark").param("status", "SUCCESS").with(user(principal)).with(csrf()))
                .andExpect(status().is3xxRedirection())
@@ -87,7 +88,8 @@ class QuizControllerTest {
 
     @Test
     void mark_whenNoneRemaining_redirectsToDone() throws Exception {
-        when(questionService.findNextUnanswered(any())).thenReturn(Optional.empty());
+        when(questionService.findById(eq(1L), any())).thenReturn(Optional.of(questionWithId(1L)));
+        when(questionService.findNextUnansweredAfter(anyInt(), any())).thenReturn(Optional.empty());
 
         mockMvc.perform(post("/quiz/1/mark").param("status", "FAILED").with(user(principal)).with(csrf()))
                .andExpect(status().is3xxRedirection())

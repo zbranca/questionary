@@ -165,13 +165,15 @@ public class QuizController {
 
         AppUser user = principal.user();
         log.info("User '{}' marking question id={} as {}", user.getUsername(), id, status);
+        Optional<Question> current = questionService.findById(id, user);
         questionService.markStatus(id, status, user);
+        int sortOrder = current.map(Question::getSortOrder).orElse(-1);
         if (isFailedMode(session)) {
-            return questionService.findNextFailed(user)
+            return questionService.findNextFailedAfter(sortOrder, user)
                     .map(next -> REDIRECT_QUIZ + next.getId())
                     .orElse(REDIRECT_QUIZ_DONE);
         }
-        return questionService.findNextUnanswered(user)
+        return questionService.findNextUnansweredAfter(sortOrder, user)
                 .map(next -> REDIRECT_QUIZ + next.getId())
                 .orElse(REDIRECT_QUIZ_DONE);
     }
