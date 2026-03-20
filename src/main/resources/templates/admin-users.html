@@ -83,7 +83,7 @@
 </main>
 
 <!-- Create / Edit User Modal -->
-<div class="modal-overlay" id="userModal" onclick="handleOverlayClick(event)">
+<div class="modal-overlay" id="userModal">
     <div class="modal">
         <h3 id="modalTitle">Create User</h3>
         <form th:action="@{/admin/users/save}" method="post" id="userForm">
@@ -145,16 +145,6 @@
     function closeModal() {
         document.getElementById('userModal').classList.remove('active');
     }
-
-    function handleOverlayClick(event) {
-        if (event.target === document.getElementById('userModal')) {
-            closeModal();
-        }
-    }
-
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') closeModal();
-    });
 
     (function() {
         var t = document.getElementById('flashToast');

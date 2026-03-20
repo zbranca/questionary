@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class QuestionService {
@@ -31,16 +32,16 @@ public class QuestionService {
         return repo.findFirstUnanswered(user, QuestionStatus.UNANSWERED).stream().findFirst();
     }
 
-    public Optional<Question> findNextUnansweredExcluding(Long id, AppUser user) {
-        return repo.findFirstUnansweredExcluding(user, QuestionStatus.UNANSWERED, id).stream().findFirst();
-    }
-
     public Optional<Question> findNextFailed(AppUser user) {
         return repo.findFirstByStatusAndUser(user, QuestionStatus.FAILED).stream().findFirst();
     }
 
-    public Optional<Question> findNextFailedExcluding(Long id, AppUser user) {
-        return repo.findFirstByStatusAndIdNotAndUser(user, QuestionStatus.FAILED, id).stream().findFirst();
+    public Optional<Question> findNextUnansweredAfter(int sortOrder, AppUser user) {
+        return repo.findFirstUnansweredAfterSortOrder(user, QuestionStatus.UNANSWERED, sortOrder).stream().findFirst();
+    }
+
+    public Optional<Question> findNextFailedAfter(int sortOrder, AppUser user) {
+        return repo.findFirstByStatusAfterSortOrder(user, QuestionStatus.FAILED, sortOrder).stream().findFirst();
     }
 
     public Optional<Question> findById(Long id, AppUser user) {
@@ -73,14 +74,12 @@ public class QuestionService {
     }
 
     public List<Question> findFiltered(String text, QuestionStatus statusFilter, AppUser user) {
-        String pattern = (text != null && !text.isBlank()) ? "%" + text.toLowerCase() + "%" : null;
-        if (statusFilter == null) {
-            return repo.findFilteredNoStatus(user, pattern);
-        }
-        if (statusFilter == QuestionStatus.UNANSWERED) {
-            return repo.findFilteredUnanswered(user, pattern, QuestionStatus.UNANSWERED);
-        }
-        return repo.findFilteredByStatus(user, pattern, statusFilter);
+        List<Question> all = repo.findAllByUserOrderBySortOrderAsc(user);
+        final String lowerText = (text != null && !text.isBlank()) ? text.toLowerCase() : null;
+        return all.stream()
+                .filter(q -> statusFilter == null || q.getStatus() == statusFilter)
+                .filter(q -> lowerText == null || q.getQuestionText().toLowerCase().contains(lowerText))
+                .collect(Collectors.toList());
     }
 
     @Transactional

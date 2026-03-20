@@ -43,41 +43,64 @@ class QuestionServiceTest {
         user.setRole(AppUser.ROLE_USER);
     }
 
-    // ---- findFiltered ----
+    // ---- findFiltered (in-memory filtering) ----
 
-    @Test
-    void findFiltered_nullTextAndNullStatus_callsNoStatusQueryWithNullPattern() {
-        when(repo.findFilteredNoStatus(user, null)).thenReturn(List.of());
-        service.findFiltered(null, null, user);
-        verify(repo).findFilteredNoStatus(user, null);
+    private Question questionWithStatus(String questionText, QuestionStatus status, int order) {
+        Question q = new Question(questionText, "A", order);
+        q.setStatus(status);
+        return q;
     }
 
     @Test
-    void findFiltered_blankText_treatedAsNoFilter() {
-        when(repo.findFilteredNoStatus(user, null)).thenReturn(List.of());
-        service.findFiltered("   ", null, user);
-        verify(repo).findFilteredNoStatus(user, null);
+    void findFiltered_nullTextAndNullStatus_returnsAllQuestions() {
+        Question q1 = questionWithStatus("Q1", QuestionStatus.SUCCESS, 0);
+        Question q2 = questionWithStatus("Q2", QuestionStatus.FAILED, 1);
+        when(repo.findAllByUserOrderBySortOrderAsc(user)).thenReturn(List.of(q1, q2));
+        assertEquals(2, service.findFiltered(null, null, user).size());
     }
 
     @Test
-    void findFiltered_withText_passesLowercaseWildcardPattern() {
-        when(repo.findFilteredNoStatus(user, "%java%")).thenReturn(List.of());
-        service.findFiltered("Java", null, user);
-        verify(repo).findFilteredNoStatus(user, "%java%");
+    void findFiltered_blankText_returnsAllQuestions() {
+        Question q1 = questionWithStatus("Q1", QuestionStatus.UNANSWERED, 0);
+        when(repo.findAllByUserOrderBySortOrderAsc(user)).thenReturn(List.of(q1));
+        assertEquals(1, service.findFiltered("   ", null, user).size());
     }
 
     @Test
-    void findFiltered_unansweredStatus_callsUnansweredVariant() {
-        when(repo.findFilteredUnanswered(user, null, QuestionStatus.UNANSWERED)).thenReturn(List.of());
-        service.findFiltered(null, QuestionStatus.UNANSWERED, user);
-        verify(repo).findFilteredUnanswered(user, null, QuestionStatus.UNANSWERED);
+    void findFiltered_withText_returnsMatchingQuestions() {
+        Question q1 = questionWithStatus("Java basics", QuestionStatus.UNANSWERED, 0);
+        Question q2 = questionWithStatus("Python basics", QuestionStatus.UNANSWERED, 1);
+        when(repo.findAllByUserOrderBySortOrderAsc(user)).thenReturn(List.of(q1, q2));
+        List<Question> result = service.findFiltered("java", null, user);
+        assertEquals(1, result.size());
+        assertEquals("Java basics", result.get(0).getQuestionText());
     }
 
     @Test
-    void findFiltered_failedStatus_callsStatusVariant() {
-        when(repo.findFilteredByStatus(user, null, QuestionStatus.FAILED)).thenReturn(List.of());
-        service.findFiltered(null, QuestionStatus.FAILED, user);
-        verify(repo).findFilteredByStatus(user, null, QuestionStatus.FAILED);
+    void findFiltered_unansweredStatus_returnsOnlyUnanswered() {
+        Question q1 = questionWithStatus("Q1", QuestionStatus.UNANSWERED, 0);
+        Question q2 = questionWithStatus("Q2", QuestionStatus.SUCCESS, 1);
+        when(repo.findAllByUserOrderBySortOrderAsc(user)).thenReturn(List.of(q1, q2));
+        List<Question> result = service.findFiltered(null, QuestionStatus.UNANSWERED, user);
+        assertEquals(1, result.size());
+        assertEquals(QuestionStatus.UNANSWERED, result.get(0).getStatus());
+    }
+
+    @Test
+    void findFiltered_failedStatus_returnsOnlyFailed() {
+        Question q1 = questionWithStatus("Q1", QuestionStatus.FAILED, 0);
+        Question q2 = questionWithStatus("Q2", QuestionStatus.SUCCESS, 1);
+        when(repo.findAllByUserOrderBySortOrderAsc(user)).thenReturn(List.of(q1, q2));
+        List<Question> result = service.findFiltered(null, QuestionStatus.FAILED, user);
+        assertEquals(1, result.size());
+        assertEquals(QuestionStatus.FAILED, result.get(0).getStatus());
+    }
+
+    @Test
+    void findFiltered_statusWithZeroMatches_returnsEmptyList() {
+        Question q1 = questionWithStatus("Q1", QuestionStatus.UNANSWERED, 0);
+        when(repo.findAllByUserOrderBySortOrderAsc(user)).thenReturn(List.of(q1));
+        assertEquals(0, service.findFiltered(null, QuestionStatus.SUCCESS, user).size());
     }
 
     // ---- importFromFile ----

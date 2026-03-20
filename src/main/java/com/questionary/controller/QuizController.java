@@ -143,18 +143,17 @@ public class QuizController {
     public String skip(@PathVariable Long id, HttpSession session,
                        @AuthenticationPrincipal AppUserDetails principal) {
         AppUser user = principal.user();
+        Optional<Question> current = questionService.findById(id, user);
+        if (current.isEmpty()) return REDIRECT_QUIZ_NO_SLASH;
+        int sortOrder = current.get().getSortOrder();
         if (isFailedMode(session)) {
-            return questionService.findNextFailedExcluding(id, user)
+            return questionService.findNextFailedAfter(sortOrder, user)
                     .map(next -> REDIRECT_QUIZ + next.getId())
-                    .orElseGet(() -> questionService.findNextFailed(user)
-                            .map(q -> REDIRECT_QUIZ + q.getId())
-                            .orElse(REDIRECT_QUIZ_DONE));
+                    .orElse(REDIRECT_QUIZ_DONE);
         }
-        return questionService.findNextUnansweredExcluding(id, user)
+        return questionService.findNextUnansweredAfter(sortOrder, user)
                 .map(next -> REDIRECT_QUIZ + next.getId())
-                .orElseGet(() -> questionService.findNextUnanswered(user)
-                        .map(q -> REDIRECT_QUIZ + q.getId())
-                        .orElse(REDIRECT_QUIZ_DONE));
+                .orElse(REDIRECT_QUIZ_DONE);
     }
 
     @PostMapping("/{id}/mark")
