@@ -40,7 +40,7 @@ class QuestionServiceTest {
         user = new AppUser();
         user.setUsername("testuser");
         user.setPassword("password");
-        user.setRole("USER");
+        user.setRole(AppUser.ROLE_USER);
     }
 
     // ---- findFiltered ----

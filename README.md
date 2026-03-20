@@ -15,6 +15,8 @@ You are shown a question, draft your response mentally, reveal the official answ
 - **Progress bar** — tracks answered vs. remaining questions
 - **Admin page** — import questions from a `.txt` file; search/filter by text or status; edit or delete individual questions; reset or delete all
 - **Persistent status** — success/fail status saved in SQLite; draft text is never stored
+- **Multi-user** — each user has an isolated question set; login required
+- **User management** — admins can create, edit, and delete user accounts
 
 ---
 
@@ -31,7 +33,11 @@ You are shown a question, draft your response mentally, reveal the official answ
 mvn spring-boot:run
 ```
 
-Open `http://localhost:8080/admin` to import questions, then `http://localhost:8080/quiz` to start.
+Open `http://localhost:8080` — you will be redirected to the login page.
+
+**Default credentials:** `admin` / `admin` (created automatically on first run)
+
+After logging in, go to `/admin` to import questions, then `/quiz` to start.
 
 ### Build a JAR
 
@@ -83,10 +89,12 @@ It is the primary component that executes instructions in a computer.
 
 | URL | Description |
 |-----|-------------|
+| `/login` | Login page |
 | `/quiz` | Redirects to the first unanswered (or failed in failed-only mode) question |
 | `/quiz/{id}` | Shows a specific question |
 | `/quiz/done` | Summary screen after all questions are reviewed |
 | `/admin` | Import questions, search/filter list, edit/delete, reset or delete all |
+| `/admin-users` | User management — create, edit, delete accounts (ADMIN only) |
 
 ---
 
@@ -95,6 +103,7 @@ It is the primary component that executes instructions in a computer.
 | Layer | Technology |
 |-------|-----------|
 | Backend | Spring Boot 3.2 |
+| Security | Spring Security (form login, role-based access) |
 | Templates | Thymeleaf |
 | Persistence | Spring Data JPA + SQLite |
 | Build | Maven |
@@ -106,23 +115,39 @@ It is the primary component that executes instructions in a computer.
 ```
 src/main/java/com/questionary/
 ├── QuestionaryApplication.java
+├── config/
+│   ├── DataInitializer.java         # Creates default admin on first run
+│   └── WebConfig.java
 ├── entity/
+│   ├── AppUser.java                 # User entity with ROLE_ADMIN/ROLE_USER constants
 │   ├── Question.java
 │   ├── QuestionStatus.java          # Enum: UNANSWERED, SUCCESS, FAILED
 │   └── QuestionStatusConverter.java # JPA converter (UNANSWERED ↔ null in DB)
-├── repository/QuestionRepository.java
+├── repository/
+│   ├── AppUserRepository.java
+│   └── QuestionRepository.java
+├── security/
+│   ├── AppUserDetails.java          # Record implementing UserDetails
+│   ├── AppUserDetailsService.java
+│   └── SecurityConfig.java
 ├── service/
 │   ├── ImportService.java           # .txt parser
-│   └── QuestionService.java
+│   ├── QuestionService.java
+│   └── UserService.java
 └── controller/
+    ├── AdminController.java
+    ├── AppErrorController.java
     ├── QuizController.java
-    └── AdminController.java
+    └── UserManagementController.java
 
 src/main/resources/
 ├── application.properties
 ├── templates/
+│   ├── admin.html
+│   ├── admin-users.html
+│   ├── error.html
+│   ├── login.html
 │   ├── quiz.html
-│   ├── quiz-done.html
-│   └── admin.html
+│   └── quiz-done.html
 └── static/css/style.css
 ```

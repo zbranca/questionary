@@ -40,7 +40,7 @@ class AdminControllerTest {
         AppUser testUser = new AppUser();
         testUser.setUsername("testuser");
         testUser.setPassword("password");
-        testUser.setRole("USER");
+        testUser.setRole(AppUser.ROLE_USER);
         principal = new AppUserDetails(testUser);
     }
 

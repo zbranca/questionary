@@ -22,24 +22,40 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```
 src/main/java/com/questionary/
 ├── QuestionaryApplication.java       # Entry point
+├── config/
+│   ├── DataInitializer.java          # Creates default admin on first run
+│   └── WebConfig.java                # MVC config (e.g. resource handlers)
 ├── entity/
+│   ├── AppUser.java                  # JPA entity; ROLE_ADMIN / ROLE_USER constants
 │   ├── Question.java                 # JPA entity
 │   ├── QuestionStatus.java           # Enum: UNANSWERED, SUCCESS, FAILED
 │   └── QuestionStatusConverter.java  # JPA converter (UNANSWERED ↔ null)
-├── repository/QuestionRepository.java
+├── repository/
+│   ├── AppUserRepository.java
+│   └── QuestionRepository.java
+├── security/
+│   ├── AppUserDetails.java           # Record wrapping AppUser; implements UserDetails
+│   ├── AppUserDetailsService.java    # Loads user by username for Spring Security
+│   └── SecurityConfig.java          # Form login, route access rules, password encoder
 ├── service/
 │   ├── ImportService.java            # .txt file parser
-│   └── QuestionService.java          # Business logic
+│   ├── QuestionService.java          # Business logic
+│   └── UserService.java             # User CRUD and admin-count guard
 └── controller/
+    ├── AdminController.java          # Admin import/manage
+    ├── AppErrorController.java       # Custom error page
     ├── QuizController.java           # Quiz flow
-    └── AdminController.java          # Admin import/manage
+    └── UserManagementController.java # Admin user management (ADMIN only)
 
 src/main/resources/
 ├── application.properties
 ├── templates/
+│   ├── admin.html                    # Import + question list
+│   ├── admin-users.html              # User list + create/edit/delete (ADMIN only)
+│   ├── error.html                    # Custom error page
+│   ├── login.html                    # Spring Security login form
 │   ├── quiz.html                     # Question + answer reveal
-│   ├── quiz-done.html                # All-done screen
-│   └── admin.html                    # Import + question list
+│   └── quiz-done.html                # All-done screen
 └── static/css/style.css
 ```
 
@@ -47,11 +63,28 @@ src/main/resources/
 
 ## Key Architecture Decisions
 
+### Spring Security + Multi-user
+- `SecurityConfig` configures form login at `/login`, logout, and per-role access rules
+- `ADMIN` role: full access including `/admin/**` and `/admin-users/**`
+- `USER` role: quiz and admin question management, no user management
+- `AppUserDetails` is a Java **record** wrapping `AppUser` — use `principal.user()` (not `getUser()`)
+- `DataInitializer` creates a default `admin/admin` account on first run if no users exist
+- `AppUser` exposes `ROLE_ADMIN` and `ROLE_USER` constants — use these instead of hardcoded strings
+
+### User Management URL Contract
+| Method | URL | Action |
+|--------|-----|--------|
+| GET | `/admin-users` | List all users (ADMIN only) |
+| POST | `/admin-users/create` | Create new user |
+| POST | `/admin-users/{id}/edit` | Edit username, password, or role |
+| POST | `/admin-users/{id}/delete` | Delete user (cannot delete self or last admin) |
+
 ### Entity: `Question`
 - `status` field: `QuestionStatus` enum — `UNANSWERED`, `SUCCESS`, `FAILED`
 - `QuestionStatusConverter` maps `UNANSWERED` ↔ `null` in the DB column (so legacy null rows work)
 - `sortOrder` preserves import sequence for deterministic "next question" ordering
 - User-typed draft is never persisted — only `status` is saved
+- Questions are isolated per user — all queries are scoped by `AppUser`
 
 ### Quiz URL Contract
 | Method | URL | Action |
