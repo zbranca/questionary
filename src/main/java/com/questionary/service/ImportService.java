@@ -83,16 +83,25 @@ public class ImportService {
                 // blank lines are ignored in all states
             }
 
-            // Flush last block
-            if (hasActiveBlock) {
-                questions.add(build(questionLines, answerLines, order));
-            }
+        flushLastBlock(hasActiveBlock, questions, questionLines, answerLines, order);
         }
 
         return questions;
     }
 
-    private Question build(List<String> questionLines, List<String> answerLines, int order) {
+  private void flushLastBlock(
+      boolean hasActiveBlock,
+      List<Question> questions,
+      List<String> questionLines,
+      List<String> answerLines,
+      int order) {
+    // Flush last block
+    if (hasActiveBlock) {
+      questions.add(build(questionLines, answerLines, order));
+    }
+  }
+
+  private Question build(List<String> questionLines, List<String> answerLines, int order) {
         String questionText = String.join("\n", questionLines);
         String answerText = String.join("\n", answerLines);
         return new Question(questionText, answerText, order);

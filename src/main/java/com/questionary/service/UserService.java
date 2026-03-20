@@ -67,6 +67,6 @@ public class UserService {
     }
 
     public long countAdmins() {
-        return userRepository.countByRole("ADMIN");
+        return userRepository.countByRole(AppUser.ROLE_ADMIN);
     }
 }

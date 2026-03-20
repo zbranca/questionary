@@ -16,7 +16,7 @@ public class QuestionStatusConverter implements AttributeConverter<QuestionStatu
         if (dbData == null) return QuestionStatus.UNANSWERED; // backward-compat for legacy null rows
         try {
             return QuestionStatus.valueOf(dbData);
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
             return QuestionStatus.UNANSWERED;
         }
     }

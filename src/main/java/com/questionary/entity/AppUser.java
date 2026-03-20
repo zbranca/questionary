@@ -1,12 +1,18 @@
 package com.questionary.entity;
 
-import jakarta.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "app_user")
 public class AppUser {
+
+    public static final String ROLE_ADMIN = "ADMIN";
+    public static final String ROLE_USER  = "USER";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,12 +25,7 @@ public class AppUser {
     private String password;
 
     @Column(nullable = false)
-    private String role; // "ADMIN" or "USER"
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
-    private List<Question> questions = new ArrayList<>();
-
-    public AppUser() {}
+    private String role; // ROLE_ADMIN or ROLE_USER
 
     public Long getId() { return id; }
 

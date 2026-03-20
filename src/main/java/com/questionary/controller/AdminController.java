@@ -10,7 +10,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -20,11 +24,14 @@ public class AdminController {
 
     private static final Logger log = LoggerFactory.getLogger(AdminController.class);
 
-    public static final String REDIRECT_ADMIN = "redirect:/admin";
-    public static final String SUCCESS_MESSAGE = "successMessage";
-    public static final String ERROR_MESSAGE = "errorMessage";
-    public static final String FAILED_ONLY_MODE = "failedOnlyMode";
+    public static final String REDIRECT_ADMIN     = "redirect:/admin";
+    public static final String SUCCESS_MESSAGE    = "successMessage";
+    public static final String ERROR_MESSAGE      = "errorMessage";
+    public static final String FAILED_ONLY_MODE   = "failedOnlyMode";
     public static final String FAILED_MODE_INITIAL = "failedModeInitialCount";
+
+    private static final String PARAM_Q             = "q";
+    private static final String PARAM_STATUS_FILTER = "statusFilter";
 
     private final QuestionService questionService;
 
@@ -40,12 +47,12 @@ public class AdminController {
             HttpSession session,
             @AuthenticationPrincipal AppUserDetails principal) {
 
-        AppUser user = principal.getUser();
+        AppUser user = principal.user();
         QuestionStatus statusEnum = null;
         if (statusFilter != null && !statusFilter.isBlank()) {
             try {
                 statusEnum = QuestionStatus.valueOf(statusFilter);
-            } catch (IllegalArgumentException e) {
+            } catch (IllegalArgumentException ignored) {
                 // invalid status value — treat as "no filter"
             }
         }
@@ -64,7 +71,7 @@ public class AdminController {
     @PostMapping("/toggle-failed-mode")
     public String toggleFailedMode(HttpSession session,
                                    @AuthenticationPrincipal AppUserDetails principal) {
-        AppUser user = principal.getUser();
+        AppUser user = principal.user();
         Boolean current = (Boolean) session.getAttribute(FAILED_ONLY_MODE);
         boolean turningOn = !Boolean.TRUE.equals(current);
         session.setAttribute(FAILED_ONLY_MODE, turningOn);
@@ -81,7 +88,7 @@ public class AdminController {
             RedirectAttributes redirectAttrs,
             @AuthenticationPrincipal AppUserDetails principal) {
 
-        AppUser user = principal.getUser();
+        AppUser user = principal.user();
         if (file.isEmpty()) {
             log.warn("User '{}' submitted an empty file for import", user.getUsername());
             redirectAttrs.addFlashAttribute(ERROR_MESSAGE, "Please select a file.");
@@ -115,15 +122,15 @@ public class AdminController {
             RedirectAttributes redirectAttrs,
             @AuthenticationPrincipal AppUserDetails principal) {
 
-        AppUser user = principal.getUser();
+        AppUser user = principal.user();
         if (questionText.isBlank() || answerText.isBlank()) {
             redirectAttrs.addFlashAttribute(ERROR_MESSAGE, "Question and answer cannot be blank.");
         } else {
             questionService.createQuestion(questionText, answerText, status, user);
             redirectAttrs.addFlashAttribute(SUCCESS_MESSAGE, "Question created.");
         }
-        if (!q.isBlank()) redirectAttrs.addAttribute("q", q);
-        if (!statusFilter.isBlank()) redirectAttrs.addAttribute("statusFilter", statusFilter);
+        if (!q.isBlank()) redirectAttrs.addAttribute(PARAM_Q, q);
+        if (!statusFilter.isBlank()) redirectAttrs.addAttribute(PARAM_STATUS_FILTER, statusFilter);
         return REDIRECT_ADMIN;
     }
 
@@ -138,7 +145,7 @@ public class AdminController {
             RedirectAttributes redirectAttrs,
             @AuthenticationPrincipal AppUserDetails principal) {
 
-        AppUser user = principal.getUser();
+        AppUser user = principal.user();
         if (questionText.isBlank() || answerText.isBlank()) {
             redirectAttrs.addFlashAttribute(ERROR_MESSAGE, "Question and answer cannot be blank.");
         } else {
@@ -146,11 +153,12 @@ public class AdminController {
                 questionService.updateQuestion(id, questionText, answerText, status, user);
                 redirectAttrs.addFlashAttribute(SUCCESS_MESSAGE, "Question updated.");
             } catch (Exception e) {
+                log.error("Update failed for question id={}: {}", id, e.getMessage(), e);
                 redirectAttrs.addFlashAttribute(ERROR_MESSAGE, "Update failed: " + e.getMessage());
             }
         }
-        if (!q.isBlank()) redirectAttrs.addAttribute("q", q);
-        if (!statusFilter.isBlank()) redirectAttrs.addAttribute("statusFilter", statusFilter);
+        if (!q.isBlank()) redirectAttrs.addAttribute(PARAM_Q, q);
+        if (!statusFilter.isBlank()) redirectAttrs.addAttribute(PARAM_STATUS_FILTER, statusFilter);
         return REDIRECT_ADMIN;
     }
 
@@ -162,18 +170,18 @@ public class AdminController {
             RedirectAttributes redirectAttrs,
             @AuthenticationPrincipal AppUserDetails principal) {
 
-        AppUser user = principal.getUser();
+        AppUser user = principal.user();
         questionService.deleteById(id, user);
         redirectAttrs.addFlashAttribute(SUCCESS_MESSAGE, "Question deleted.");
-        if (!q.isBlank()) redirectAttrs.addAttribute("q", q);
-        if (!statusFilter.isBlank()) redirectAttrs.addAttribute("statusFilter", statusFilter);
+        if (!q.isBlank()) redirectAttrs.addAttribute(PARAM_Q, q);
+        if (!statusFilter.isBlank()) redirectAttrs.addAttribute(PARAM_STATUS_FILTER, statusFilter);
         return REDIRECT_ADMIN;
     }
 
     @PostMapping("/delete-all")
     public String deleteAll(RedirectAttributes redirectAttrs,
                             @AuthenticationPrincipal AppUserDetails principal) {
-        AppUser user = principal.getUser();
+        AppUser user = principal.user();
         log.warn("User '{}' requested DELETE ALL questions", user.getUsername());
         questionService.deleteAll(user);
         redirectAttrs.addFlashAttribute(SUCCESS_MESSAGE, "All questions deleted.");
@@ -183,7 +191,7 @@ public class AdminController {
     @PostMapping("/reset-statuses")
     public String resetStatuses(RedirectAttributes redirectAttrs,
                                 @AuthenticationPrincipal AppUserDetails principal) {
-        AppUser user = principal.getUser();
+        AppUser user = principal.user();
         log.info("User '{}' requested reset all statuses", user.getUsername());
         questionService.resetAllStatuses(user);
         redirectAttrs.addFlashAttribute(SUCCESS_MESSAGE, "All statuses reset to unanswered.");

@@ -11,7 +11,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.Optional;
 
@@ -34,7 +38,7 @@ public class QuizController {
     @GetMapping
     public String quizHome(HttpSession session,
                            @AuthenticationPrincipal AppUserDetails principal) {
-        AppUser user = principal.getUser();
+        AppUser user = principal.user();
         if (questionService.countTotal(user) == 0) {
             return "redirect:/admin";
         }
@@ -52,7 +56,7 @@ public class QuizController {
     @PostMapping("/start-failed-mode")
     public String startFailedMode(HttpSession session,
                                   @AuthenticationPrincipal AppUserDetails principal) {
-        AppUser user = principal.getUser();
+        AppUser user = principal.user();
         session.setAttribute(AdminController.FAILED_ONLY_MODE, true);
         session.setAttribute(AdminController.FAILED_MODE_INITIAL, questionService.countFailed(user));
         return REDIRECT_QUIZ_NO_SLASH;
@@ -62,7 +66,7 @@ public class QuizController {
     @PostMapping("/toggle-failed-mode")
     public String toggleFailedMode(HttpSession session,
                                    @AuthenticationPrincipal AppUserDetails principal) {
-        AppUser user = principal.getUser();
+        AppUser user = principal.user();
         boolean turningOn = !isFailedMode(session);
         session.setAttribute(AdminController.FAILED_ONLY_MODE, turningOn);
         if (turningOn) {
@@ -79,7 +83,7 @@ public class QuizController {
     @GetMapping("/done")
     public String done(Model model, HttpSession session,
                        @AuthenticationPrincipal AppUserDetails principal) {
-        AppUser user = principal.getUser();
+        AppUser user = principal.user();
         model.addAttribute("totalCount", questionService.countTotal(user));
         model.addAttribute("successCount", questionService.countSuccess(user));
         model.addAttribute("failedCount", questionService.countFailed(user));
@@ -95,7 +99,7 @@ public class QuizController {
             HttpSession session,
             @AuthenticationPrincipal AppUserDetails principal) {
 
-        AppUser user = principal.getUser();
+        AppUser user = principal.user();
         Optional<Question> opt = questionService.findById(id, user);
         if (opt.isEmpty()) return REDIRECT_QUIZ_NO_SLASH;
 
@@ -112,7 +116,7 @@ public class QuizController {
             HttpSession session,
             @AuthenticationPrincipal AppUserDetails principal) {
 
-        AppUser user = principal.getUser();
+        AppUser user = principal.user();
         Optional<Question> opt = questionService.findById(id, user);
         if (opt.isEmpty()) return REDIRECT_QUIZ_NO_SLASH;
 
@@ -138,7 +142,7 @@ public class QuizController {
     @PostMapping("/{id}/skip")
     public String skip(@PathVariable Long id, HttpSession session,
                        @AuthenticationPrincipal AppUserDetails principal) {
-        AppUser user = principal.getUser();
+        AppUser user = principal.user();
         if (isFailedMode(session)) {
             return questionService.findNextFailedExcluding(id, user)
                     .map(next -> REDIRECT_QUIZ + next.getId())
@@ -160,7 +164,7 @@ public class QuizController {
             HttpSession session,
             @AuthenticationPrincipal AppUserDetails principal) {
 
-        AppUser user = principal.getUser();
+        AppUser user = principal.user();
         log.info("User '{}' marking question id={} as {}", user.getUsername(), id, status);
         questionService.markStatus(id, status, user);
         if (isFailedMode(session)) {

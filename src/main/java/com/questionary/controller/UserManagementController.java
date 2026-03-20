@@ -45,7 +45,7 @@ public class UserManagementController {
             redirectAttrs.addFlashAttribute(AdminController.ERROR_MESSAGE, "Username cannot be blank.");
             return REDIRECT_USERS;
         }
-        if (!role.equals("ADMIN") && !role.equals("USER")) {
+        if (!role.equals(AppUser.ROLE_ADMIN) && !role.equals(AppUser.ROLE_USER)) {
             redirectAttrs.addFlashAttribute(AdminController.ERROR_MESSAGE, "Invalid role.");
             return REDIRECT_USERS;
         }
@@ -85,13 +85,13 @@ public class UserManagementController {
             @AuthenticationPrincipal AppUserDetails principal,
             RedirectAttributes redirectAttrs) {
 
-        if (principal.getUser().getId().equals(id)) {
+        if (principal.user().getId().equals(id)) {
             redirectAttrs.addFlashAttribute(AdminController.ERROR_MESSAGE, "You cannot delete your own account.");
             return REDIRECT_USERS;
         }
         if (userService.findById(id).isPresent() && userService.countAdmins() <= 1) {
             boolean isTargetAdmin = userService.findById(id)
-                    .map(u -> "ADMIN".equals(u.getRole()))
+                    .map(u -> AppUser.ROLE_ADMIN.equals(u.getRole()))
                     .orElse(false);
             if (isTargetAdmin) {
                 redirectAttrs.addFlashAttribute(AdminController.ERROR_MESSAGE, "Cannot delete the last admin account.");

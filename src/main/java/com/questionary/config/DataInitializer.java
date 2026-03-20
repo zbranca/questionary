@@ -2,6 +2,7 @@ package com.questionary.config;
 
 import com.questionary.entity.AppUser;
 import com.questionary.repository.AppUserRepository;
+import jakarta.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -23,12 +24,12 @@ public class DataInitializer implements ApplicationListener<ApplicationReadyEven
     }
 
     @Override
-    public void onApplicationEvent(ApplicationReadyEvent event) {
+    public void onApplicationEvent(@Nonnull ApplicationReadyEvent event) {
         if (userRepository.count() == 0) {
             AppUser admin = new AppUser();
             admin.setUsername("admin");
             admin.setPassword(passwordEncoder.encode("admin"));
-            admin.setRole("ADMIN");
+            admin.setRole(AppUser.ROLE_ADMIN);
             userRepository.save(admin);
             log.warn("=======================================================");
             log.warn("Default admin account created: username=admin password=admin");
