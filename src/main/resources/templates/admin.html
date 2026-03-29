@@ -199,6 +199,7 @@
             <div class="modal-actions">
                 <button type="button" class="btn btn-outline" onclick="closeEditModal()">Cancel</button>
                 <div class="spacer"></div>
+                <a id="launchInQuizBtn" class="btn btn-outline" style="display:none">Launch in Quiz</a>
                 <button type="button" class="btn btn-danger" id="deleteBtn"
                         onclick="confirmDelete()">Delete</button>
                 <button type="submit" class="btn btn-primary">Save</button>
@@ -241,6 +242,9 @@
         document.getElementById('deleteQ').value = params.get('q') || '';
         document.getElementById('deleteStatusFilter').value = params.get('statusFilter') || '';
         document.getElementById('deleteBtn').style.display = '';
+        const launchBtn = document.getElementById('launchInQuizBtn');
+        launchBtn.href = '/quiz/' + id;
+        launchBtn.style.display = '';
         document.getElementById('editModal').classList.add('active');
     }
 
@@ -254,6 +258,7 @@
         document.getElementById('editQ').value = params.get('q') || '';
         document.getElementById('editStatusFilter').value = params.get('statusFilter') || '';
         document.getElementById('deleteBtn').style.display = 'none';
+        document.getElementById('launchInQuizBtn').style.display = 'none';
         document.getElementById('editModal').classList.add('active');
         document.getElementById('editQuestionText').focus();
     }
