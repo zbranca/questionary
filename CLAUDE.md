@@ -27,12 +27,14 @@ src/main/java/com/questionary/
 │   └── WebConfig.java                # MVC config (e.g. resource handlers)
 ├── entity/
 │   ├── AppUser.java                  # JPA entity; ROLE_ADMIN / ROLE_USER constants
-│   ├── Question.java                 # JPA entity
+│   ├── Chapter.java                  # JPA entity; groups questions into chapters
+│   ├── Question.java                 # JPA entity (with chapter FK)
 │   ├── QuestionStatus.java           # Enum: UNANSWERED, SUCCESS, FAILED
 │   └── QuestionStatusConverter.java  # JPA converter (UNANSWERED ↔ null)
 ├── repository/
 │   ├── AppUserRepository.java
-│   └── QuestionRepository.java
+│   ├── ChapterRepository.java        # Find chapters by user; find-or-create for imports
+│   └── QuestionRepository.java       # Includes chapter-filtered query variants
 ├── security/
 │   ├── AppUserDetails.java           # Record wrapping AppUser; implements UserDetails
 │   ├── AppUserDetailsService.java    # Loads user by username for Spring Security
@@ -79,12 +81,23 @@ src/main/resources/
 | POST | `/admin-users/{id}/edit` | Edit username, password, or role |
 | POST | `/admin-users/{id}/delete` | Delete user (cannot delete self or last admin) |
 
+### Entity: `Chapter`
+- `name` field: chapter name (e.g., "Java Basics", "Advanced Patterns")
+- `sortOrder`: preserves import sequence for stable chapter ordering
+- `user` FK: chapters are isolated per user
+- Chapters are created automatically during import when `@@Chapter Name` is encountered
+- Find-or-create by name during import prevents duplicates if the same chapter is re-imported
+- Displayed in admin question table; filterable by chapter in quiz
+
 ### Entity: `Question`
 - `status` field: `QuestionStatus` enum — `UNANSWERED`, `SUCCESS`, `FAILED`
 - `QuestionStatusConverter` maps `UNANSWERED` ↔ `null` in the DB column (so legacy null rows work)
 - `sortOrder` preserves import sequence for deterministic "next question" ordering
+- `chapter` FK: optional reference to a `Chapter` entity (nullable, so legacy questions with no chapter work)
+- `chapterName` (@Transient): scratch field used only during import parsing; never persisted to DB
 - User-typed draft is never persisted — only `status` is saved
 - Questions are isolated per user — all queries are scoped by `AppUser`
+- Chapter name is displayed in the quiz question card and in the admin questions table
 
 ### Quiz URL Contract
 | Method | URL | Action |
@@ -104,15 +117,19 @@ A session flag `failedOnlyMode` restricts quiz navigation to questions with `FAI
 ### Admin URL Contract
 | Method | URL | Action |
 |--------|-----|--------|
-| GET | `/admin` | Question list + stats + upload form (supports `?q=` text search and `?statusFilter=` enum filter) |
-| POST | `/admin/import` | Upload `.txt`, parse and append to DB |
+| GET | `/admin` | Question list + stats + upload form (supports `?q=` text search, `?statusFilter=` enum filter, `?chapterFilter=` chapter name filter) |
+| POST | `/admin/import` | Upload `.txt`, parse and append to DB; creates chapters as needed |
+| POST | `/admin/set-chapter-filter` | Store selected chapter IDs in session for quiz filtering |
 | POST | `/admin/toggle-failed-mode` | Toggle session-based failed-only quiz mode |
-| POST | `/admin/question/{id}/update` | Edit question text, answer text, and status |
+| POST | `/admin/question/{id}/update` | Edit question text, answer text, and status (chapter is read-only, assigned at import) |
 | POST | `/admin/question/{id}/delete` | Delete single question |
 | POST | `/admin/reset-statuses` | Set all statuses → UNANSWERED |
 | POST | `/admin/delete-all` | Delete all questions |
 
 All mutations follow the POST-Redirect-GET pattern with `RedirectAttributes` flash messages.
+
+### Chapter Filter Session
+A session map `selectedChapterIds` (type `Set<Long>`) holds the IDs of chapters selected for quiz viewing. When populated, the quiz only shows questions from those chapters. When empty (default), all chapters are shown. Managed via `POST /admin/set-chapter-filter`.
 
 ### SQLite Config
 ```properties
@@ -129,6 +146,7 @@ export JAVA_OPTS="-Dspring.datasource.url=jdbc:sqlite:/absolute/path/questionary
 
 ### Import File Format
 ```
+@@Chapter Name
 #Question text here
 Answer line 1
 Answer line 2
@@ -143,14 +161,21 @@ Answer to the multi-line question
 
 #Next question
 Answer
+@This line is now regular content (part of the answer)
 
-@This is a comment line and is ignored
+@@Another Chapter
+#New question
+Its answer
 ```
+- Lines starting with `@@` begin a new chapter (the `@@` prefix is stripped; name is trimmed)
+  - All following questions belong to that chapter until the next `@@` or end of file
+  - Blank lines between a chapter header and the first `#` are ignored
+  - Chapter names are automatically deduplicated: re-importing a file with the same chapter name reuses the existing `Chapter` entity
 - Lines starting with `#` begin or continue a question block (the `#` is stripped)
-- **Multiple consecutive `#` lines combine into a single multi-line question**
-- A bare `#` line (nothing after `#`) embeds a blank line within the question text
-- Lines starting with `@` are comment lines and are skipped
-- Non-`#`, non-blank lines after a question block accumulate as the answer
+  - **Multiple consecutive `#` lines combine into a single multi-line question**
+  - A bare `#` line (nothing after `#`) embeds a blank line within the question text
+- Lines starting with `@` (single `@`, not `@@`) are now treated as regular answer content (no longer comments)
+- Non-`#`, non-blank, non-`@@` lines after a question block accumulate as the answer
 - Blank file-lines are ignored in all states; a new `#` line after answer lines starts a fresh block
 
 ---

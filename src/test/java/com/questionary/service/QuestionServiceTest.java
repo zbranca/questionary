@@ -1,9 +1,18 @@
 package com.questionary.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.questionary.entity.AppUser;
 import com.questionary.entity.Question;
 import com.questionary.entity.QuestionStatus;
+import com.questionary.repository.ChapterRepository;
 import com.questionary.repository.QuestionRepository;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,20 +21,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
 @ExtendWith(MockitoExtension.class)
 class QuestionServiceTest {
 
     @Mock
     private QuestionRepository repo;
+
+    @Mock
+    private ChapterRepository chapterRepo;
 
     @Mock
     private ImportService importService;
@@ -56,14 +59,14 @@ class QuestionServiceTest {
         Question q1 = questionWithStatus("Q1", QuestionStatus.SUCCESS, 0);
         Question q2 = questionWithStatus("Q2", QuestionStatus.FAILED, 1);
         when(repo.findAllByUserOrderBySortOrderAsc(user)).thenReturn(List.of(q1, q2));
-        assertEquals(2, service.findFiltered(null, null, user).size());
+        assertEquals(2, service.findFiltered(null, null, null, user).size());
     }
 
     @Test
     void findFiltered_blankText_returnsAllQuestions() {
         Question q1 = questionWithStatus("Q1", QuestionStatus.UNANSWERED, 0);
         when(repo.findAllByUserOrderBySortOrderAsc(user)).thenReturn(List.of(q1));
-        assertEquals(1, service.findFiltered("   ", null, user).size());
+        assertEquals(1, service.findFiltered("   ", null, null, user).size());
     }
 
     @Test
@@ -71,7 +74,7 @@ class QuestionServiceTest {
         Question q1 = questionWithStatus("Java basics", QuestionStatus.UNANSWERED, 0);
         Question q2 = questionWithStatus("Python basics", QuestionStatus.UNANSWERED, 1);
         when(repo.findAllByUserOrderBySortOrderAsc(user)).thenReturn(List.of(q1, q2));
-        List<Question> result = service.findFiltered("java", null, user);
+        List<Question> result = service.findFiltered("java", null, null, user);
         assertEquals(1, result.size());
         assertEquals("Java basics", result.get(0).getQuestionText());
     }
@@ -81,7 +84,7 @@ class QuestionServiceTest {
         Question q1 = questionWithStatus("Q1", QuestionStatus.UNANSWERED, 0);
         Question q2 = questionWithStatus("Q2", QuestionStatus.SUCCESS, 1);
         when(repo.findAllByUserOrderBySortOrderAsc(user)).thenReturn(List.of(q1, q2));
-        List<Question> result = service.findFiltered(null, QuestionStatus.UNANSWERED, user);
+        List<Question> result = service.findFiltered(null, QuestionStatus.UNANSWERED, null, user);
         assertEquals(1, result.size());
         assertEquals(QuestionStatus.UNANSWERED, result.get(0).getStatus());
     }
@@ -91,7 +94,7 @@ class QuestionServiceTest {
         Question q1 = questionWithStatus("Q1", QuestionStatus.FAILED, 0);
         Question q2 = questionWithStatus("Q2", QuestionStatus.SUCCESS, 1);
         when(repo.findAllByUserOrderBySortOrderAsc(user)).thenReturn(List.of(q1, q2));
-        List<Question> result = service.findFiltered(null, QuestionStatus.FAILED, user);
+        List<Question> result = service.findFiltered(null, QuestionStatus.FAILED, null, user);
         assertEquals(1, result.size());
         assertEquals(QuestionStatus.FAILED, result.get(0).getStatus());
     }
@@ -100,7 +103,7 @@ class QuestionServiceTest {
     void findFiltered_statusWithZeroMatches_returnsEmptyList() {
         Question q1 = questionWithStatus("Q1", QuestionStatus.UNANSWERED, 0);
         when(repo.findAllByUserOrderBySortOrderAsc(user)).thenReturn(List.of(q1));
-        assertEquals(0, service.findFiltered(null, QuestionStatus.SUCCESS, user).size());
+        assertEquals(0, service.findFiltered(null, QuestionStatus.SUCCESS, null, user).size());
     }
 
     // ---- importFromFile ----

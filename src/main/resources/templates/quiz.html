@@ -58,7 +58,9 @@
 
     <!-- Question card -->
     <div class="card">
-        <div class="question-label">Question</div>
+        <div class="question-label">
+            Question<th:block th:if="${question.chapter != null}"><span class="question-chapter" th:text="${' — ' + question.chapter.name}"></span></th:block>
+        </div>
         <pre class="question-text" th:text="${question.questionText}"></pre>
 
         <!-- Draft textarea: editable before reveal, read-only after -->

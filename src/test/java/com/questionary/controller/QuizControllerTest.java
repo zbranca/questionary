@@ -1,26 +1,25 @@
 package com.questionary.controller;
 
-import com.questionary.entity.AppUser;
-import com.questionary.entity.Question;
-import com.questionary.entity.QuestionStatus;
-import com.questionary.security.AppUserDetails;
-import com.questionary.security.AppUserDetailsService;
-import com.questionary.service.QuestionService;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.web.servlet.MockMvc;
-
-import java.util.Optional;
-
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import com.questionary.entity.AppUser;
+import com.questionary.entity.Question;
+import com.questionary.entity.QuestionStatus;
+import com.questionary.security.AppUserDetails;
+import com.questionary.security.AppUserDetailsService;
+import com.questionary.service.QuestionService;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(QuizController.class)
 class QuizControllerTest {
@@ -49,39 +48,45 @@ class QuizControllerTest {
     void quizHome_whenNoQuestions_redirectsToAdmin() throws Exception {
         when(questionService.countTotal(any())).thenReturn(0L);
 
-        mockMvc.perform(get("/quiz").with(user(principal)))
-               .andExpect(status().is3xxRedirection())
-               .andExpect(redirectedUrl("/admin"));
+        mockMvc
+            .perform(get("/quiz").with(user(principal)))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/admin"));
     }
 
     @Test
     void quizHome_whenUnansweredExists_redirectsToFirstQuestion() throws Exception {
         when(questionService.countTotal(any())).thenReturn(3L);
-        when(questionService.findNextUnanswered(any())).thenReturn(Optional.of(questionWithId(2L)));
+        when(questionService.findNextUnanswered(any(), any())).thenReturn(Optional.of(questionWithId(2L)));
 
-        mockMvc.perform(get("/quiz").with(user(principal)))
-               .andExpect(status().is3xxRedirection())
-               .andExpect(redirectedUrl("/quiz/2"));
+        mockMvc
+            .perform(get("/quiz").with(user(principal)))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/quiz/2"));
     }
 
     @Test
     void quizHome_whenAllAnswered_redirectsToDone() throws Exception {
         when(questionService.countTotal(any())).thenReturn(3L);
-        when(questionService.findNextUnanswered(any())).thenReturn(Optional.empty());
+        when(questionService.findNextUnanswered(any(), any())).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/quiz").with(user(principal)))
-               .andExpect(status().is3xxRedirection())
-               .andExpect(redirectedUrl("/quiz/done"));
+        mockMvc
+            .perform(get("/quiz").with(user(principal)))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/quiz/done"));
     }
 
     @Test
     void mark_persistsStatusAndRedirectsToNextUnanswered() throws Exception {
         when(questionService.findById(eq(1L), any())).thenReturn(Optional.of(questionWithId(1L)));
-        when(questionService.findNextUnansweredAfter(anyInt(), any())).thenReturn(Optional.of(questionWithId(5L)));
+        when(questionService.findNextUnansweredAfter(anyInt(), any(), any())).thenReturn(
+            Optional.of(questionWithId(5L))
+        );
 
-        mockMvc.perform(post("/quiz/1/mark").param("status", "SUCCESS").with(user(principal)).with(csrf()))
-               .andExpect(status().is3xxRedirection())
-               .andExpect(redirectedUrl("/quiz/5"));
+        mockMvc
+            .perform(post("/quiz/1/mark").param("status", "SUCCESS").with(user(principal)).with(csrf()))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/quiz/5"));
 
         verify(questionService).markStatus(eq(1L), eq(QuestionStatus.SUCCESS), any());
     }
@@ -89,11 +94,12 @@ class QuizControllerTest {
     @Test
     void mark_whenNoneRemaining_redirectsToDone() throws Exception {
         when(questionService.findById(eq(1L), any())).thenReturn(Optional.of(questionWithId(1L)));
-        when(questionService.findNextUnansweredAfter(anyInt(), any())).thenReturn(Optional.empty());
+        when(questionService.findNextUnansweredAfter(anyInt(), any(), any())).thenReturn(Optional.empty());
 
-        mockMvc.perform(post("/quiz/1/mark").param("status", "FAILED").with(user(principal)).with(csrf()))
-               .andExpect(status().is3xxRedirection())
-               .andExpect(redirectedUrl("/quiz/done"));
+        mockMvc
+            .perform(post("/quiz/1/mark").param("status", "FAILED").with(user(principal)).with(csrf()))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/quiz/done"));
     }
 
     private Question questionWithId(Long id) {
