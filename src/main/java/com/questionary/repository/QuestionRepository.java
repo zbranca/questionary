@@ -14,25 +14,18 @@ import org.springframework.data.repository.query.Param;
 public interface QuestionRepository extends JpaRepository<Question, Long> {
     // ── All questions for user ──────────────────────────────────────────────
 
-    @Query(
-        "SELECT q FROM Question q WHERE q.user = :user ORDER BY q.sortOrder ASC"
-    )
-    List<Question> findAllByUserOrderBySortOrderAsc(
-        @Param("user") AppUser user
-    );
+    @Query("SELECT q FROM Question q LEFT JOIN FETCH q.chapter WHERE q.user = :user ORDER BY q.sortOrder ASC")
+    List<Question> findAllByUserOrderBySortOrderAsc(@Param("user") AppUser user);
 
     // ── Unanswered navigation (no chapter filter) ───────────────────────────
 
     @Query(
-        "SELECT q FROM Question q WHERE q.user = :user AND (q.status IS NULL OR q.status = :unanswered) ORDER BY q.sortOrder ASC"
+        "SELECT q FROM Question q LEFT JOIN FETCH q.chapter WHERE q.user = :user AND (q.status IS NULL OR q.status = :unanswered) ORDER BY q.sortOrder ASC"
     )
-    List<Question> findFirstUnanswered(
-        @Param("user") AppUser user,
-        @Param("unanswered") QuestionStatus unanswered
-    );
+    List<Question> findFirstUnanswered(@Param("user") AppUser user, @Param("unanswered") QuestionStatus unanswered);
 
     @Query(
-        "SELECT q FROM Question q WHERE q.user = :user AND (q.status IS NULL OR q.status = :unanswered) AND q.sortOrder > :sortOrder ORDER BY q.sortOrder ASC"
+        "SELECT q FROM Question q LEFT JOIN FETCH q.chapter WHERE q.user = :user AND (q.status IS NULL OR q.status = :unanswered) AND q.sortOrder > :sortOrder ORDER BY q.sortOrder ASC"
     )
     List<Question> findFirstUnansweredAfterSortOrder(
         @Param("user") AppUser user,
@@ -43,7 +36,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     // ── Unanswered navigation (with chapter filter) ─────────────────────────
 
     @Query(
-        "SELECT q FROM Question q WHERE q.user = :user AND (q.status IS NULL OR q.status = :unanswered) AND q.chapter.id IN :chapterIds ORDER BY q.sortOrder ASC"
+        "SELECT q FROM Question q LEFT JOIN FETCH q.chapter WHERE q.user = :user AND (q.status IS NULL OR q.status = :unanswered) AND q.chapter.id IN :chapterIds ORDER BY q.sortOrder ASC"
     )
     List<Question> findFirstUnansweredByChapters(
         @Param("user") AppUser user,
@@ -52,7 +45,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     );
 
     @Query(
-        "SELECT q FROM Question q WHERE q.user = :user AND (q.status IS NULL OR q.status = :unanswered) AND q.chapter.id IN :chapterIds AND q.sortOrder > :sortOrder ORDER BY q.sortOrder ASC"
+        "SELECT q FROM Question q LEFT JOIN FETCH q.chapter WHERE q.user = :user AND (q.status IS NULL OR q.status = :unanswered) AND q.chapter.id IN :chapterIds AND q.sortOrder > :sortOrder ORDER BY q.sortOrder ASC"
     )
     List<Question> findFirstUnansweredAfterSortOrderByChapters(
         @Param("user") AppUser user,
@@ -64,15 +57,12 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     // ── Failed navigation (no chapter filter) ───────────────────────────────
 
     @Query(
-        "SELECT q FROM Question q WHERE q.user = :user AND q.status = :status ORDER BY q.sortOrder ASC"
+        "SELECT q FROM Question q LEFT JOIN FETCH q.chapter WHERE q.user = :user AND q.status = :status ORDER BY q.sortOrder ASC"
     )
-    List<Question> findFirstByStatusAndUser(
-        @Param("user") AppUser user,
-        @Param("status") QuestionStatus status
-    );
+    List<Question> findFirstByStatusAndUser(@Param("user") AppUser user, @Param("status") QuestionStatus status);
 
     @Query(
-        "SELECT q FROM Question q WHERE q.user = :user AND q.status = :status AND q.sortOrder > :sortOrder ORDER BY q.sortOrder ASC"
+        "SELECT q FROM Question q LEFT JOIN FETCH q.chapter WHERE q.user = :user AND q.status = :status AND q.sortOrder > :sortOrder ORDER BY q.sortOrder ASC"
     )
     List<Question> findFirstByStatusAfterSortOrder(
         @Param("user") AppUser user,
@@ -83,7 +73,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     // ── Failed navigation (with chapter filter) ──────────────────────────────
 
     @Query(
-        "SELECT q FROM Question q WHERE q.user = :user AND q.status = :status AND q.chapter.id IN :chapterIds ORDER BY q.sortOrder ASC"
+        "SELECT q FROM Question q LEFT JOIN FETCH q.chapter WHERE q.user = :user AND q.status = :status AND q.chapter.id IN :chapterIds ORDER BY q.sortOrder ASC"
     )
     List<Question> findFirstByStatusAndUserByChapters(
         @Param("user") AppUser user,
@@ -92,7 +82,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     );
 
     @Query(
-        "SELECT q FROM Question q WHERE q.user = :user AND q.status = :status AND q.sortOrder > :sortOrder AND q.chapter.id IN :chapterIds ORDER BY q.sortOrder ASC"
+        "SELECT q FROM Question q LEFT JOIN FETCH q.chapter WHERE q.user = :user AND q.status = :status AND q.sortOrder > :sortOrder AND q.chapter.id IN :chapterIds ORDER BY q.sortOrder ASC"
     )
     List<Question> findFirstByStatusAfterSortOrderByChapters(
         @Param("user") AppUser user,
@@ -103,32 +93,19 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     // ── Counts ───────────────────────────────────────────────────────────────
 
-    @Query(
-        "SELECT COUNT(q) FROM Question q WHERE q.user = :user AND (q.status IS NULL OR q.status = :unanswered)"
-    )
-    long countUnanswered(
-        @Param("user") AppUser user,
-        @Param("unanswered") QuestionStatus unanswered
-    );
+    @Query("SELECT COUNT(q) FROM Question q WHERE q.user = :user AND (q.status IS NULL OR q.status = :unanswered)")
+    long countUnanswered(@Param("user") AppUser user, @Param("unanswered") QuestionStatus unanswered);
 
-    @Query(
-        "SELECT COUNT(q) FROM Question q WHERE q.user = :user AND q.status = :status"
-    )
-    long countByStatusAndUser(
-        @Param("user") AppUser user,
-        @Param("status") QuestionStatus status
-    );
+    @Query("SELECT COUNT(q) FROM Question q WHERE q.user = :user AND q.status = :status")
+    long countByStatusAndUser(@Param("user") AppUser user, @Param("status") QuestionStatus status);
 
     @Query("SELECT COUNT(q) FROM Question q WHERE q.user = :user")
     long countByUser(@Param("user") AppUser user);
 
     // ── Single lookup ────────────────────────────────────────────────────────
 
-    @Query("SELECT q FROM Question q WHERE q.user = :user AND q.id = :id")
-    Optional<Question> findByIdAndUser(
-        @Param("id") Long id,
-        @Param("user") AppUser user
-    );
+    @Query("SELECT q FROM Question q LEFT JOIN FETCH q.chapter WHERE q.user = :user AND q.id = :id")
+    Optional<Question> findByIdAndUser(@Param("id") Long id, @Param("user") AppUser user);
 
     // ── Bulk ops ─────────────────────────────────────────────────────────────
 
