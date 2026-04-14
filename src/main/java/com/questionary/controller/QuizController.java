@@ -24,9 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping("/quiz")
 public class QuizController {
 
-    private static final Logger log = LoggerFactory.getLogger(
-        QuizController.class
-    );
+    private static final Logger log = LoggerFactory.getLogger(QuizController.class);
 
     public static final String REDIRECT_QUIZ = "redirect:/quiz/";
     public static final String REDIRECT_QUIZ_DONE = "redirect:/quiz/done";
@@ -39,10 +37,7 @@ public class QuizController {
     }
 
     @GetMapping
-    public String quizHome(
-        HttpSession session,
-        @AuthenticationPrincipal AppUserDetails principal
-    ) {
+    public String quizHome(HttpSession session, @AuthenticationPrincipal AppUserDetails principal) {
         AppUser user = principal.user();
         if (questionService.countTotal(user) == 0) {
             return "redirect:/admin";
@@ -61,73 +56,44 @@ public class QuizController {
     }
 
     @PostMapping("/start-failed-mode")
-    public String startFailedMode(
-        HttpSession session,
-        @AuthenticationPrincipal AppUserDetails principal
-    ) {
+    public String startFailedMode(HttpSession session, @AuthenticationPrincipal AppUserDetails principal) {
         AppUser user = principal.user();
         session.setAttribute(AdminController.FAILED_ONLY_MODE, true);
-        session.setAttribute(
-            AdminController.FAILED_MODE_INITIAL,
-            questionService.countFailed(user)
-        );
+        session.setAttribute(AdminController.FAILED_MODE_INITIAL, questionService.countFailed(user));
         return REDIRECT_QUIZ_NO_SLASH;
     }
 
     @PostMapping("/toggle-failed-mode")
-    public String toggleFailedMode(
-        HttpSession session,
-        @AuthenticationPrincipal AppUserDetails principal
-    ) {
+    public String toggleFailedMode(HttpSession session, @AuthenticationPrincipal AppUserDetails principal) {
         AppUser user = principal.user();
         boolean turningOn = !isFailedMode(session);
         session.setAttribute(AdminController.FAILED_ONLY_MODE, turningOn);
         if (turningOn) {
-            session.setAttribute(
-                AdminController.FAILED_MODE_INITIAL,
-                questionService.countFailed(user)
-            );
+            session.setAttribute(AdminController.FAILED_MODE_INITIAL, questionService.countFailed(user));
         }
-        log.info(
-            "User '{}' toggled failed-only mode in quiz: {}",
-            user.getUsername(),
-            turningOn ? "ON" : "OFF"
-        );
+        log.info("User '{}' toggled failed-only mode in quiz: {}", user.getUsername(), turningOn ? "ON" : "OFF");
         return REDIRECT_QUIZ_NO_SLASH;
     }
 
     private boolean isFailedMode(HttpSession session) {
-        return Boolean.TRUE.equals(
-            session.getAttribute(AdminController.FAILED_ONLY_MODE)
-        );
+        return Boolean.TRUE.equals(session.getAttribute(AdminController.FAILED_ONLY_MODE));
     }
 
     @SuppressWarnings("unchecked")
     private Set<Long> getSelectedChapterIds(HttpSession session) {
-        Set<Long> ids = (Set<Long>) session.getAttribute(
-            AdminController.SELECTED_CHAPTER_IDS
-        );
+        Set<Long> ids = (Set<Long>) session.getAttribute(AdminController.SELECTED_CHAPTER_IDS);
         return ids != null ? ids : new LinkedHashSet<>();
     }
 
     @GetMapping("/done")
-    public String done(
-        Model model,
-        HttpSession session,
-        @AuthenticationPrincipal AppUserDetails principal
-    ) {
+    public String done(Model model, HttpSession session, @AuthenticationPrincipal AppUserDetails principal) {
         AppUser user = principal.user();
-        model.addAttribute("totalCount", questionService.countTotal(user));
-        model.addAttribute("successCount", questionService.countSuccess(user));
-        model.addAttribute("failedCount", questionService.countFailed(user));
-        model.addAttribute(
-            "unansweredCount",
-            questionService.countUnanswered(user)
-        );
-        model.addAttribute(
-            AdminController.FAILED_ONLY_MODE,
-            isFailedMode(session)
-        );
+        Set<Long> chapterIds = getSelectedChapterIds(session);
+        model.addAttribute("totalCount", questionService.countTotalByChapters(user, chapterIds));
+        model.addAttribute("successCount", questionService.countSuccessByChapters(user, chapterIds));
+        model.addAttribute("failedCount", questionService.countFailedByChapters(user, chapterIds));
+        model.addAttribute("unansweredCount", questionService.countUnansweredByChapters(user, chapterIds));
+        model.addAttribute(AdminController.FAILED_ONLY_MODE, isFailedMode(session));
         return "quiz-done";
     }
 
@@ -170,36 +136,22 @@ public class QuizController {
         HttpSession session,
         AppUser user
     ) {
-        Long initial = (Long) session.getAttribute(
-            AdminController.FAILED_MODE_INITIAL
-        );
-        long currentFailed = questionService.countFailed(user);
+        Set<Long> chapterIds = getSelectedChapterIds(session);
+        Long initial = (Long) session.getAttribute(AdminController.FAILED_MODE_INITIAL);
+        long currentFailed = questionService.countFailedByChapters(user, chapterIds);
         model.addAttribute("question", question);
         model.addAttribute("showAnswer", showAnswer);
         model.addAttribute("draft", draft);
-        model.addAttribute(
-            AdminController.FAILED_ONLY_MODE,
-            isFailedMode(session)
-        );
-        model.addAttribute("totalCount", questionService.countTotal(user));
-        model.addAttribute(
-            "unansweredCount",
-            questionService.countUnanswered(user)
-        );
-        model.addAttribute("successCount", questionService.countSuccess(user));
+        model.addAttribute(AdminController.FAILED_ONLY_MODE, isFailedMode(session));
+        model.addAttribute("totalCount", questionService.countTotalByChapters(user, chapterIds));
+        model.addAttribute("unansweredCount", questionService.countUnansweredByChapters(user, chapterIds));
+        model.addAttribute("successCount", questionService.countSuccessByChapters(user, chapterIds));
         model.addAttribute("failedCount", currentFailed);
-        model.addAttribute(
-            "failedModeInitial",
-            initial != null ? initial : currentFailed
-        );
+        model.addAttribute("failedModeInitial", initial != null ? initial : currentFailed);
     }
 
     @PostMapping("/{id}/skip")
-    public String skip(
-        @PathVariable Long id,
-        HttpSession session,
-        @AuthenticationPrincipal AppUserDetails principal
-    ) {
+    public String skip(@PathVariable Long id, HttpSession session, @AuthenticationPrincipal AppUserDetails principal) {
         AppUser user = principal.user();
         Optional<Question> current = questionService.findById(id, user);
         if (current.isEmpty()) return REDIRECT_QUIZ_NO_SLASH;
@@ -225,12 +177,7 @@ public class QuizController {
         @AuthenticationPrincipal AppUserDetails principal
     ) {
         AppUser user = principal.user();
-        log.info(
-            "User '{}' marking question id={} as {}",
-            user.getUsername(),
-            id,
-            status
-        );
+        log.info("User '{}' marking question id={} as {}", user.getUsername(), id, status);
         Optional<Question> current = questionService.findById(id, user);
         questionService.markStatus(id, status, user);
         int sortOrder = current.map(Question::getSortOrder).orElse(-1);
