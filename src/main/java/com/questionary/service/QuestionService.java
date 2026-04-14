@@ -215,6 +215,8 @@ public class QuestionService {
         long count = repo.countByUser(user);
         log.warn("User '{}' deleted ALL {} question(s)", user.getUsername(), count);
         repo.deleteAllByUser(user);
+        chapterRepo.deleteAllByUser(user);
+        log.info("User '{}' deleted all chapters", user.getUsername());
     }
 
     @Transactional
