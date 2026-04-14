@@ -191,7 +191,7 @@
             <div class="card danger-zone">
                 <h2>Manage</h2>
 
-                <!-- Chapter filter multiselect -->
+                <!-- Chapter filter dropdown with checkboxes -->
                 <div
                     th:if="${!#lists.isEmpty(chapters)}"
                     class="chapter-filter-wrap"
@@ -206,39 +206,70 @@
                             th:name="${_csrf.parameterName}"
                             th:value="${_csrf.token}"
                         />
-                        <label class="chapter-filter-label"
-                            >Quiz Chapters</label
-                        >
-                        <select
-                            name="chapterIds"
-                            multiple
-                            class="chapter-multiselect"
-                            size="4"
-                        >
-                            <th:block th:each="ch : ${chapters}">
-                                <option
-                                    th:value="${ch.id}"
-                                    th:text="${ch.name}"
-                                    th:selected="${selectedChapterIds.contains(ch.id)}"
-                                ></option>
-                            </th:block>
-                        </select>
-                        <p class="chapter-filter-hint">
-                            Hold Ctrl / Cmd to select multiple. No selection =
-                            all chapters shown in quiz.
-                        </p>
-                        <button
-                            type="submit"
-                            class="btn btn-secondary"
-                            style="margin-top: 0.5rem"
-                        >
-                            Apply Chapter Filter
-                        </button>
-                        <span
-                            th:if="${!#sets.isEmpty(selectedChapterIds)}"
-                            class="chapter-active-badge"
-                            >Filter active</span
-                        >
+                        <div class="chapter-filter-container">
+                            <label class="chapter-filter-label">
+                                Quiz Chapters
+                            </label>
+                            <div class="chapter-dropdown-wrapper">
+                                <button
+                                    type="button"
+                                    class="chapter-dropdown-toggle"
+                                    onclick="toggleChapterDropdown(event)"
+                                >
+                                    <span class="dropdown-text"
+                                        >Select Chapters</span
+                                    >
+                                    <span class="dropdown-arrow">▼</span>
+                                </button>
+                                <div
+                                    class="chapter-dropdown-menu"
+                                    id="chapterDropdown"
+                                >
+                                    <div class="chapter-options">
+                                        <th:block th:each="ch : ${chapters}">
+                                            <label
+                                                class="chapter-checkbox-label"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    name="chapterIds"
+                                                    th:value="${ch.id}"
+                                                    class="chapter-checkbox"
+                                                    th:checked="${selectedChapterIds.contains(ch.id)}"
+                                                    onchange="
+                                                        updateChapterDropdownText()
+                                                    "
+                                                />
+                                                <span
+                                                    class="checkbox-custom"
+                                                ></span>
+                                                <span
+                                                    class="checkbox-text"
+                                                    th:text="${ch.name}"
+                                                ></span>
+                                            </label>
+                                        </th:block>
+                                    </div>
+                                    <div class="chapter-dropdown-footer">
+                                        <button
+                                            type="submit"
+                                            class="btn btn-secondary"
+                                            style="margin: 0"
+                                        >
+                                            Apply Filter
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="chapter-filter-hint">
+                                No selection = all chapters shown in quiz.
+                            </p>
+                            <span
+                                th:if="${!#sets.isEmpty(selectedChapterIds)}"
+                                class="chapter-active-badge"
+                                >Filter active</span
+                            >
+                        </div>
                     </form>
                 </div>
 
@@ -681,6 +712,51 @@
                 ) {
                     tip.classList.remove("active");
                 }
+            });
+
+            function toggleChapterDropdown(event) {
+                event.preventDefault();
+                const toggle = event.currentTarget;
+                const dropdown = document.getElementById("chapterDropdown");
+                toggle.classList.toggle("active");
+                dropdown.classList.toggle("active");
+            }
+
+            function updateChapterDropdownText() {
+                const checkboxes = document.querySelectorAll(
+                    ".chapter-checkbox:checked",
+                );
+                const toggle = document.querySelector(
+                    ".chapter-dropdown-toggle",
+                );
+                const textSpan = toggle.querySelector(".dropdown-text");
+
+                if (checkboxes.length === 0) {
+                    textSpan.textContent = "Select Chapters";
+                } else if (checkboxes.length === 1) {
+                    textSpan.textContent =
+                        checkboxes[0].nextElementSibling.nextElementSibling.textContent;
+                } else {
+                    textSpan.textContent =
+                        checkboxes.length + " chapters selected";
+                }
+            }
+
+            document.addEventListener("click", function (e) {
+                const dropdown = document.getElementById("chapterDropdown");
+                const wrapper = document.querySelector(
+                    ".chapter-dropdown-wrapper",
+                );
+                if (dropdown && wrapper && !wrapper.contains(e.target)) {
+                    dropdown.classList.remove("active");
+                    document
+                        .querySelector(".chapter-dropdown-toggle")
+                        .classList.remove("active");
+                }
+            });
+
+            document.addEventListener("DOMContentLoaded", function () {
+                updateChapterDropdownText();
             });
         </script>
     </body>
