@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Java 21**, **Spring Boot 3.2.4** — web + Thymeleaf + Spring Data JPA
 - **SQLite** — `sqlite-jdbc 3.45.2.0` + `hibernate-community-dialects`
 - **Thymeleaf** — server-side templates (no JavaScript framework); cache disabled for hot-reload in dev
-- **Maven** — build tool; packages as **WAR** (deployable to external Tomcat or runnable as fat-JAR)
+- **Maven** — build tool; packages as **JAR** (runnable with embedded Tomcat)
 
 ---
 
@@ -21,7 +21,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```
 src/main/java/com/questionary/
-├── QuestionaryApplication.java       # Entry point
+├── QuestionaryApplication.java       # Entry point; standard Spring Boot app
 ├── config/
 │   ├── DataInitializer.java          # Creates default admin on first run
 │   └── WebConfig.java                # MVC config (e.g. resource handlers)

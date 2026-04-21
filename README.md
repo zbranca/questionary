@@ -39,14 +39,19 @@ Open `http://localhost:8080` — you will be redirected to the login page.
 
 After logging in, go to `/admin` to import questions, then `/quiz` to start.
 
-### Build a JAR
+### Build & Run as JAR (Recommended)
 
 ```bash
 mvn package -DskipTests
 java -jar target/questionary-0.0.1-SNAPSHOT.jar
 ```
 
-The SQLite database file `questionary.db` is created automatically in the working directory.
+The application will start with an embedded Tomcat web server on port 8080. The SQLite database file `questionary.db` is created automatically in the working directory.
+
+To customize the database location:
+```bash
+java -Dspring.datasource.url=jdbc:sqlite:/path/to/questionary.db -jar target/questionary-0.0.1-SNAPSHOT.jar
+```
 
 ---
 
